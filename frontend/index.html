@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site Inventory Ledger — Faisal Town Group</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div class="wrap">
+
+<header class="site">
+
+  <div>
+    <p class="brand-eyebrow">
+      Faisal Town Group · Site Operations
+    </p>
+
+    <h1>
+      Site Inventory Ledger
+    </h1>
+  </div>
+
+  <div class="stamp" id="recordCountStamp">
+    0 ITEMS ON RECORD
+  </div>
+
+</header>
+
+
+<!-- ================= TABS ================= -->
+
+<div class="tabbar">
+
+  <button class="active" data-tab="ledger">
+    Ledger
+  </button>
+
+  <button data-tab="dashboard">
+    Dashboard
+  </button>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- ======================= LEDGER ========================== -->
+<!-- ========================================================= -->
+
+<div class="panel" id="tab-ledger">
+
+  <div class="controls">
+
+    <div class="field">
+
+      <label for="f-search">
+        Search
+      </label>
+
+      <input
+        type="text"
+        id="f-search"
+        placeholder="Item, grade, PO#..."
+        style="min-width:180px;"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label for="f-project">
+        Project
+      </label>
+
+      <select id="f-project">
+        <option value="">
+          All Projects
+        </option>
+      </select>
+
+    </div>
+
+
+    <div class="spacer"></div>
+
+
+    <button class="btn secondary" id="exportBtn">
+      Export CSV
+    </button>
+
+    <button class="btn secondary" id="manageProjectsBtn">
+      + Add Project
+    </button>
+
+    <button class="btn orange" id="addRowBtn">
+      + Add Row
+    </button>
+
+  </div>
+
+
+  <!-- PROJECT PANEL -->
+
+  <div class="form-panel" id="projectPanel">
+
+    <p class="form-title" style="color:var(--rebar);">
+      Manage Projects
+    </p>
+
+    <div class="controls" style="margin-bottom:12px;">
+
+      <div class="field" style="flex:1;min-width:220px;">
+
+        <label for="in-newproject">
+          New project name
+        </label>
+
+        <input
+          type="text"
+          id="in-newproject"
+          placeholder="e.g. Faisal Hills Gate"
+        >
+
+      </div>
+
+      <button
+        class="btn rebar"
+        id="addProjectBtn"
+        style="align-self:flex-end;"
+      >
+        Add Project
+      </button>
+
+    </div>
+
+
+    <div
+      id="projectChipsManage"
+      style="display:flex;gap:8px;flex-wrap:wrap;"
+    ></div>
+
+
+    <div class="form-actions">
+
+      <button class="btn secondary" id="closeProjectsBtn">
+        Close
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <p
+    style="
+      font-family:Arial, Helvetica, sans-serif;
+      font-size:11px;
+      color:var(--steel);
+      margin:0 0 10px;
+    "
+  >
+    Click into any cell to edit it directly — changes save automatically.
+  </p>
+
+
+  <!-- LEDGER TABLE -->
+
+  <div class="table-scroll">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Project</th>
+          <th>Item</th>
+          <th>Grade/Size</th>
+          <th>PO Ref</th>
+          <th>Unit</th>
+
+          <th class="num">
+            Rate
+          </th>
+
+          <th class="num">
+            Demand
+          </th>
+
+          <th class="num">
+            Received
+          </th>
+
+          <th class="num">
+            Cost
+          </th>
+
+          <th>
+            Updated
+          </th>
+
+          <th>
+            Remarks
+          </th>
+
+          <th></th>
+
+        </tr>
+
+      </thead>
+
+      <tbody id="ledgerBody"></tbody>
+
+    </table>
+
+
+    <div
+      class="empty-state"
+      id="emptyState"
+      style="display:none;"
+    >
+      No items match your filters. Try clearing search or add a new row.
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- ===================== DASHBOARD ========================= -->
+<!-- ========================================================= -->
+
+<div
+  class="panel"
+  id="tab-dashboard"
+  style="display:none;"
+>
+
+  <p
+    class="form-title"
+    style="color:var(--steel);margin-bottom:10px;"
+  >
+    Filter by project
+  </p>
+
+
+  <div
+    class="project-chips"
+    id="projectChips"
+  ></div>
+
+
+  <!-- DASHBOARD STAT CARDS -->
+
+  <div class="stat-grid">
+
+    <div class="stat-tile">
+
+      <p class="stat-label">
+        Total Demand
+      </p>
+
+      <p
+        class="stat-value"
+        id="statDemand"
+      >
+        0
+      </p>
+
+      <p class="stat-unit">
+        across selected scope
+      </p>
+
+    </div>
+
+
+    <div class="stat-tile">
+
+      <p class="stat-label">
+        Total Received
+      </p>
+
+      <p
+        class="stat-value"
+        id="statReceived"
+      >
+        0
+      </p>
+
+      <p class="stat-unit">
+        delivered to site
+      </p>
+
+    </div>
+
+
+    <div class="stat-tile cost">
+
+      <p class="stat-label">
+        Project Cost
+      </p>
+
+      <p
+        class="stat-value"
+        id="statCost"
+      >
+        ₨0
+      </p>
+
+      <p class="stat-unit">
+        rate × received
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- DASHBOARD TABLE -->
+
+  <div class="table-scroll">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>
+            Item
+          </th>
+
+          <th>
+            Grade/Size
+          </th>
+
+          <th>
+            Unit
+          </th>
+
+          <th class="num">
+            Demand
+          </th>
+
+          <th class="num">
+            Received
+          </th>
+
+          <th class="num">
+            Cost
+          </th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody id="dashBody"></tbody>
+
+    </table>
+
+
+    <div
+      class="empty-state"
+      id="dashEmpty"
+      style="display:none;"
+    >
+      No records for this project yet.
+    </div>
+
+  </div>
+
+</div>
+
+
+<footer class="note">
+
+  Data is stored per-browser via persistent app storage.
+  Cost = Rate × Received.
+
+</footer>
+
+</div>
+
+
+
+<script src="script.js"></script>
+
+</body>
+</html>

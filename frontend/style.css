@@ -1,0 +1,587 @@
+
+:root{
+  --ink:#460404;
+  --paper:#ffffff;
+  --paper-2:#fcf4f3;
+  --steel:#55606B;
+  --steel-soft:#8993A0;
+  --blueprint:#2C5C86;
+  --blueprint-dim:#e2ebf1;
+  --safety:#8f2828c4;
+  --safety-soft:#fbe6cd;
+  --rebar:#8f7976;
+  --rebar-soft:#ffffff;
+  --ok:#2f6d4f;
+  --ok-soft:#dce7e0;
+  --line:rgba(116,87,87,0);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+  margin:0;
+  padding:0;
+}
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:Arial, Helvetica, sans-serif;
+  min-height:100vh;
+}
+
+.wrap{
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:28px 28px 80px;
+}
+
+/* ================= HEADER ================= */
+
+header.site{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  border-bottom:3px solid var(--ink);
+  padding-bottom:18px;
+  margin-bottom:22px;
+  flex-wrap:wrap;
+  gap:14px;
+}
+
+.brand-eyebrow{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--steel);
+  margin:0 0 6px;
+}
+
+h1{
+  font-family:Arial, Helvetica, sans-serif;
+  font-weight:700;
+  text-transform:uppercase;
+  font-size:34px;
+  letter-spacing:.01em;
+  margin:0;
+  line-height:1.02;
+}
+
+.stamp{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:11px;
+  color:var(--rebar);
+  border:1.5px solid var(--rebar);
+  padding:4px 10px;
+  border-radius:3px;
+  transform:rotate(-3deg);
+  letter-spacing:.06em;
+  white-space:nowrap;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:rgba(138,51,36,0.04);
+}
+
+.stamp::before{
+  content:"●";
+  font-size:8px;
+}
+
+/* ================= TABS ================= */
+
+.tabbar{
+  display:flex;
+  gap:6px;
+  margin-bottom:20px;
+}
+
+.tabbar button{
+  font-family:Arial, Helvetica, sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  font-size:14px;
+  font-weight:600;
+  padding:10px 20px 9px;
+  background:var(--paper-2);
+  border:1.5px solid var(--ink);
+  border-bottom:none;
+  border-radius:6px 6px 0 0;
+  cursor:pointer;
+  color:var(--steel);
+  position:relative;
+  top:1.5px;
+}
+
+.tabbar button.active{
+  background:var(--ink);
+  color:var(--paper-2);
+}
+
+/* ================= PANEL ================= */
+
+.panel{
+  width:100%;
+  background:transparent;
+  border:none;
+  border-radius:0;
+  padding:0;
+}
+
+/* ================= CONTROLS ================= */
+
+.controls{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom:16px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.field label{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:var(--steel);
+}
+
+select,
+input[type=text],
+input[type=number],
+input[type=date],
+textarea{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:13.5px;
+  padding:8px 10px;
+  border:1.3px solid var(--ink);
+  border-radius:4px;
+  background:#fff;
+  color:var(--ink);
+}
+
+input[type=number]{
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+.btn{
+  font-family:Arial, Helvetica, sans-serif;
+  font-weight:600;
+  font-size:13.5px;
+  padding:9px 16px;
+  border-radius:4px;
+  border:1.5px solid var(--ink);
+  cursor:pointer;
+  background:var(--ink);
+  color:#fff;
+}
+
+.btn.secondary{
+  background:transparent;
+  color:var(--ink);
+}
+
+.btn.orange{
+  background:var(--safety);
+  border-color:var(--safety);
+}
+
+.btn.rebar{
+  background:var(--rebar);
+  border-color:var(--rebar);
+}
+
+.btn.small{
+  padding:5px 10px;
+  font-size:12px;
+  border-radius:3px;
+}
+
+.btn:hover{
+  filter:brightness(1.08);
+}
+
+.spacer{
+  flex:1;
+}
+
+/* ================= FORM PANEL ================= */
+
+.form-panel{
+  background:var(--blueprint-dim);
+  border:1.5px dashed var(--blueprint);
+  border-radius:6px;
+  padding:18px;
+  margin-bottom:18px;
+  display:none;
+}
+
+.form-panel.open{
+  display:block;
+}
+
+.form-title{
+  font-family:Arial, Helvetica, sans-serif;
+  text-transform:uppercase;
+  font-size:15px;
+  letter-spacing:.05em;
+  color:var(--blueprint);
+  margin:0 0 12px;
+}
+
+.form-actions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+}
+
+/* ================= TABLE ================= */
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  table-layout:auto;
+}
+
+thead th{
+  text-align:left;
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--paper);
+  background-color:#460404;
+  border-bottom:2px solid var(--ink);
+  padding:9px 8px;
+  white-space:nowrap;
+}
+
+tbody td{
+  padding:5px 6px;
+  border-bottom:1px solid rgba(70,4,4,0.12);
+  vertical-align:middle;
+}
+
+tbody tr:nth-child(even){
+  background:rgba(23,33,43,0.025);
+}
+
+tbody tr:hover{
+  background:var(--blueprint-dim);
+}
+
+td.num,
+th.num{
+  text-align:right;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+/* ================= DASHBOARD TABLE ================= */
+
+/*
+   These styles affect ONLY the Dashboard table.
+   The Ledger remains more compact.
+*/
+
+#tab-dashboard table tbody td{
+  padding:9px 10px;
+  font-size:14px;
+}
+
+#tab-dashboard table thead th{
+  padding:11px 10px;
+  font-size:14px;
+}
+
+/* ================= TAGS ================= */
+
+.tag{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  padding:3px 7px;
+  border-radius:3px;
+  display:inline-block;
+  border:1px solid;
+}
+
+.tag.consumable{
+  color:var(--blueprint);
+  border-color:var(--blueprint);
+  background:var(--blueprint-dim);
+}
+
+.tag.nonconsumable{
+  color:var(--safety);
+  border-color:var(--safety);
+  background:var(--safety-soft);
+}
+
+.tag.asset{
+  color:var(--rebar);
+  border-color:var(--rebar);
+  background:var(--rebar-soft);
+}
+
+/* ================= ROW BUTTONS ================= */
+
+.rowbtns{
+  display:flex;
+  gap:4px;
+}
+
+.rowbtns button{
+  background:#682b2b;
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:6px 10px;
+  cursor:pointer;
+  font-family:Arial, Helvetica, sans-serif;
+  color:#ffffff;
+  font-weight:bold;
+  font-size:12px;
+}
+
+.rowbtns button:hover{
+  border-color:var(--ink);
+}
+
+.rowbtns button.del:hover{
+  border-color:var(--rebar);
+  color:var(--rebar);
+}
+
+.empty-state{
+  text-align:center;
+  padding:40px 10px;
+  color:var(--steel);
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:13px;
+}
+
+/* ================= INLINE EDITABLE CELLS ================= */
+
+.cell-input,
+.cell-select{
+  display:inline-block;
+  box-sizing:content-box;
+  width:auto;
+  min-width:15px;
+  max-width:220px;
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:12px;
+  padding:5px 5px;
+  border:1.3px solid transparent;
+  border-radius:4px;
+  background:transparent;
+  color:var(--ink);
+}
+
+.cell-input[type=number]{
+  font-family:Arial, Helvetica, sans-serif;
+  text-align:right;
+}
+
+.cell-input:hover,
+.cell-select:hover{
+  border-color:rgba(70,4,4,0.25);
+  background:#fff;
+}
+
+.cell-input:focus,
+.cell-select:focus{
+  outline:none;
+  border-color:var(--blueprint);
+  background:#fff;
+  box-shadow:0 0 0 2px var(--blueprint-dim);
+}
+
+.cell-select{
+  cursor:pointer;
+}
+
+.cell-remarks{
+  min-width:70px;
+}
+
+.cell-narrow{
+  min-width:50px;
+}
+
+.cost-cell{
+  font-family:Arial, Helvetica, sans-serif;
+  text-align:right;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+.updated-cell{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:11px;
+  color:var(--steel);
+  white-space:nowrap;
+}
+
+/* ================= AUTO WIDTH ================= */
+
+const{
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+/* ================= PROJECT CHIPS ================= */
+
+.project-chips{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+
+.chip{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:12px;
+  padding:7px 14px;
+  border-radius:20px;
+  border:1.3px solid var(--ink);
+  cursor:pointer;
+  background:#fff;
+}
+
+.chip.active{
+  background:var(--ink);
+  color:#fff;
+}
+
+/* ================= DASHBOARD STATS ================= */
+
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  margin-bottom:26px;
+}
+
+.stat-tile{
+  background:#fff;
+  border:1.5px solid var(--ink);
+  border-radius:6px;
+  padding:16px 16px 14px;
+  position:relative;
+  overflow:hidden;
+}
+
+.stat-tile::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:5px;
+  background:var(--blueprint);
+}
+
+.stat-tile.cost::before{
+  background:var(--safety);
+}
+
+.stat-label{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--steel);
+  margin:0 0 8px;
+  padding-left:6px;
+}
+
+.stat-value{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:28px;
+  font-weight:600;
+  padding-left:6px;
+}
+
+.stat-unit{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:12px;
+  color:var(--steel);
+  padding-left:6px;
+}
+
+/* ================= STATUS ================= */
+
+.status-pill{
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:10.5px;
+  padding:3px 9px;
+  border-radius:20px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.status-pill.ok{
+  background:var(--ok-soft);
+  color:var(--ok);
+}
+
+.status-pill.low{
+  background:var(--safety-soft);
+  color:var(--safety);
+}
+
+.status-pill.out{
+  background:var(--rebar-soft);
+  color:var(--rebar);
+}
+
+/* ================= TABLE SCROLL ================= */
+
+.table-scroll{
+  overflow-x:auto;
+}
+
+/* ================= FOOTER ================= */
+
+footer.note{
+  margin-top:24px;
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:11px;
+  color:var(--steel-soft);
+  line-height:1.6;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width:820px){
+
+  .stat-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+}
+
+@media (max-width:520px){
+
+  .stat-grid{
+    grid-template-columns:1fr;
+  }
+
+  h1{
+    font-size:26px;
+  }
+
+}
+
