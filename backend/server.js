@@ -1,15 +1,13 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+require("dotenv").config();
 
-const pool = require('./db');
-const authenticateToken = require('./middleware/authMiddleware');
-const authorizeRoles = require('./permissionsMiddleware');
+const express = require("express");
+const cors = require("cors");
+
+const pool = require("./db");
+const authenticateToken = require("./middleware/authMiddleware");
+const authorizeRoles = require("./permissionsMiddleware");
 
 const app = express();
-
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
@@ -17,92 +15,101 @@ app.use(express.json());
 
 // ================= HOME =================
 
-app.get('/', (req, res) => {
-    res.send('Construction Inventory Backend is running');
+app.get("/", (req, res) => {
+    res.send("Construction Inventory Backend is running");
 });
 
 
 // ================= DATABASE TEST =================
 
-app.get('/api/test', async (req, res) => {
+app.get("/api/test", async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT 1 AS test'
+            "SELECT 1 AS test"
         );
 
         res.json({
             success: true,
-            message: 'Backend and MySQL are connected',
+            message: "Backend and MySQL are connected",
             result: rows
         });
 
     } catch (error) {
-        console.error('DATABASE TEST ERROR:', error);
+
+        console.error("DATABASE TEST ERROR:", error);
 
         res.status(500).json({
             success: false,
-            message: 'Database connection failed',
-            error: error.message
+            message: "Database connection failed"
         });
     }
 });
 
 
 // ================= LOGIN =================
+// We use username + password consistently
 
-app.post('/api/login', async (req, res) => {
+app.post("/api/login", async (req, res) => {
+
     try {
+
         const { username, password } = req.body;
 
         if (!username || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Username and password are required'
+                message: "Username and password are required"
             });
         }
 
         const [users] = await pool.query(
-            'SELECT * FROM users WHERE username = ?',
+            `SELECT id, username, email, password, role
+             FROM users
+             WHERE username = ?`,
             [username]
         );
 
         if (users.length === 0) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid username or password'
+                message: "Invalid username or password"
             });
         }
 
         const user = users[0];
 
-       const passwordCorrect = await bcrypt.compare(
-        password,
-        user.password
-    );
+        const passwordCorrect =
+            await require("bcrypt").compare(
+                password,
+                user.password
+            );
 
         if (!passwordCorrect) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid username or password'
+                message: "Invalid username or password"
             });
         }
+
+        const jwt = require("jsonwebtoken");
 
         const token = jwt.sign(
             {
                 id: user.id,
                 username: user.username,
+                email: user.email,
                 role: user.role
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '8h'
+                expiresIn: "8h"
             }
         );
 
         res.json({
             success: true,
-            message: 'Login successful',
-            token: token,
+            message: `Welcome ${user.username}`,
+            token,
             user: {
                 id: user.id,
                 username: user.username,
@@ -112,68 +119,75 @@ app.post('/api/login', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('LOGIN ERROR:', error);
+
+        console.error("LOGIN ERROR:", error);
 
         res.status(500).json({
             success: false,
-            message: 'Login failed'
+            message: "Login failed"
         });
     }
 });
 
 
-// ================= INVENTORY =================
-
-
-// GET all inventory
-// All logged-in users can read
+// ================= GET INVENTORY =================
 
 app.get(
-    '/api/inventory',
+    "/api/inventory",
     authenticateToken,
-    authorizeRoles('admin', 'manager', 'engineer', 'viewer'),
+    authorizeRoles(
+        "admin",
+        "manager",
+        "engineer",
+        "viewer"
+    ),
+
     async (req, res) => {
 
         try {
 
             const [rows] = await pool.query(`
                 SELECT
-                    id,
-                    project,
-                    item,
-                    grade,
-                    po_reference,
-                    unit,
-                    rate,
-                    demand,
-                    received,
-                    updated_at,
-                    remarks
+                    inventory.*,
+
+                    COALESCE(
+                        (
+                            SELECT SUM(quantity)
+                            FROM checkouts
+                            WHERE checkouts.inventory_id = inventory.id
+                        ),
+                        0
+                    ) AS checked_out
+
                 FROM inventory
-                ORDER BY id DESC
+
+                ORDER BY inventory.id DESC
             `);
 
             res.json(rows);
 
         } catch (error) {
 
-            console.error('GET INVENTORY ERROR:', error);
+            console.error(
+                "GET INVENTORY ERROR:",
+                error
+            );
 
             res.status(500).json({
-                message: 'Failed to load inventory'
+                message: "Failed to load inventory"
             });
         }
     }
 );
 
 
-// ADD inventory record
-// Admin and Manager only
+// ================= ADD INVENTORY =================
 
 app.post(
-    '/api/inventory',
+    "/api/inventory",
     authenticateToken,
-    authorizeRoles('admin', 'manager'),
+    authorizeRoles("admin", "manager"),
+
     async (req, res) => {
 
         try {
@@ -187,11 +201,17 @@ app.post(
                 rate,
                 demand,
                 received,
-                updated_at,
                 remarks
             } = req.body;
 
-            const [result] = await pool.query(`
+            if (!project || !item) {
+                return res.status(400).json({
+                    message: "Project and item are required"
+                });
+            }
+
+            const [result] = await pool.query(
+                `
                 INSERT INTO inventory
                 (
                     project,
@@ -202,47 +222,51 @@ app.post(
                     rate,
                     demand,
                     received,
-                    updated_at,
                     remarks
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
-                project || '',
-                item || '',
-                grade || '',
-                po_reference || '',
-                unit || '',
-                Number(rate) || 0,
-                Number(demand) || 0,
-                Number(received) || 0,
-                updated_at || null,
-                remarks || ''
-            ]);
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `,
+                [
+                    project,
+                    item,
+                    grade || "",
+                    po_reference || "",
+                    unit || "",
+                    Number(rate) || 0,
+                    Number(demand) || 0,
+                    Number(received) || 0,
+                    remarks || ""
+                ]
+            );
 
             res.json({
                 success: true,
-                id: result.insertId
+                id: result.insertId,
+                message: "Inventory item added successfully"
             });
 
         } catch (error) {
 
-            console.error('POST INVENTORY ERROR:', error);
+            console.error(
+                "POST INVENTORY ERROR:",
+                error
+            );
 
             res.status(500).json({
-                message: 'Failed to add inventory record'
+                message: "Failed to add inventory"
             });
         }
     }
 );
 
 
-// UPDATE inventory record
-// Admin and Manager only
+// ================= UPDATE INVENTORY =================
 
 app.put(
-    '/api/inventory/:id',
+    "/api/inventory/:id",
     authenticateToken,
-    authorizeRoles('admin', 'manager'),
+    authorizeRoles("admin", "manager"),
+
     async (req, res) => {
 
         try {
@@ -258,12 +282,13 @@ app.put(
                 rate,
                 demand,
                 received,
-                updated_at,
                 remarks
             } = req.body;
 
-            await pool.query(`
+            await pool.query(
+                `
                 UPDATE inventory
+
                 SET
                     project = ?,
                     item = ?,
@@ -273,46 +298,51 @@ app.put(
                     rate = ?,
                     demand = ?,
                     received = ?,
-                    updated_at = ?,
                     remarks = ?
+
                 WHERE id = ?
-            `, [
-                project || '',
-                item || '',
-                grade || '',
-                po_reference || '',
-                unit || '',
-                Number(rate) || 0,
-                Number(demand) || 0,
-                Number(received) || 0,
-                updated_at|| null,
-                remarks || '',
-                id
-            ]);
+                `,
+                [
+                    project || "",
+                    item || "",
+                    grade || "",
+                    po_reference || "",
+                    unit || "",
+                    Number(rate) || 0,
+                    Number(demand) || 0,
+                    Number(received) || 0,
+                    remarks || "",
+                    id
+                ]
+            );
 
             res.json({
-                success: true
+                success: true,
+                message: "Inventory updated successfully"
             });
 
         } catch (error) {
 
-            console.error('PUT INVENTORY ERROR:', error);
+            console.error(
+                "UPDATE INVENTORY ERROR:",
+                error
+            );
 
             res.status(500).json({
-                message: 'Failed to update inventory record'
+                message: "Failed to update inventory"
             });
         }
     }
 );
 
 
-// DELETE inventory record
-// Admin only
+// ================= DELETE INVENTORY =================
 
 app.delete(
-    '/api/inventory/:id',
+    "/api/inventory/:id",
     authenticateToken,
-    authorizeRoles('admin'),
+    authorizeRoles("admin"),
+
     async (req, res) => {
 
         try {
@@ -320,81 +350,311 @@ app.delete(
             const id = req.params.id;
 
             await pool.query(
-                'DELETE FROM inventory WHERE id = ?',
+                "DELETE FROM inventory WHERE id = ?",
                 [id]
             );
 
             res.json({
-                success: true
+                success: true,
+                message: "Inventory deleted successfully"
             });
 
         } catch (error) {
 
-            console.error('DELETE INVENTORY ERROR:', error);
+            console.error(
+                "DELETE INVENTORY ERROR:",
+                error
+            );
 
             res.status(500).json({
-                message: 'Failed to delete inventory record'
+                message:
+                    "Cannot delete this item because checkout records may exist."
             });
         }
     }
 );
 
 
-// ================= PROJECTS =================
-
-
-// GET projects
-// All logged-in users can view
+// ================= GET CHECKOUTS =================
 
 app.get(
-    '/api/projects',
+    "/api/checkouts",
     authenticateToken,
-    authorizeRoles('admin', 'manager', 'engineer', 'viewer'),
+
     async (req, res) => {
 
         try {
 
-            const [rows] = await pool.query(
-                'SELECT id, name FROM projects ORDER BY name ASC'
-            );
+            const [rows] = await pool.query(`
+                SELECT
+
+                    checkouts.id,
+                    checkouts.inventory_id,
+                    checkouts.quantity,
+                    checkouts.checked_out_to,
+                    checkouts.purpose,
+                    checkouts.checkout_date,
+
+                    inventory.project,
+                    inventory.item,
+                    inventory.grade,
+
+                    users.username AS checked_out_by
+
+                FROM checkouts
+
+                JOIN inventory
+                    ON inventory.id =
+                    checkouts.inventory_id
+
+                JOIN users
+                    ON users.id =
+                    checkouts.checked_out_by
+
+                ORDER BY
+                    checkouts.checkout_date DESC
+            `);
 
             res.json(rows);
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "GET CHECKOUT ERROR:",
+                error
+            );
 
             res.status(500).json({
-                message: 'Failed to load projects'
+                message: "Failed to load checkouts"
             });
         }
     }
 );
 
 
-// ADD project
-// Admin and Manager only
+// ================= CREATE CHECKOUT =================
 
 app.post(
-    '/api/projects',
+    "/api/checkouts",
     authenticateToken,
-    authorizeRoles('admin', 'manager'),
+    authorizeRoles(
+        "admin",
+        "manager",
+        "engineer"
+    ),
+
+    async (req, res) => {
+
+        const connection =
+            await pool.getConnection();
+
+        try {
+
+            const {
+                inventory_id,
+                quantity,
+                checked_out_to,
+                purpose
+            } = req.body;
+
+            if (
+                !inventory_id ||
+                !quantity ||
+                Number(quantity) <= 0 ||
+                !checked_out_to
+            ) {
+                return res.status(400).json({
+                    message:
+                        "Invalid checkout information"
+                });
+            }
+
+            await connection.beginTransaction();
+
+            const [inventoryRows] =
+                await connection.query(
+                    `
+                    SELECT id, received
+
+                    FROM inventory
+
+                    WHERE id = ?
+
+                    FOR UPDATE
+                    `,
+                    [inventory_id]
+                );
+
+            if (inventoryRows.length === 0) {
+
+                await connection.rollback();
+
+                return res.status(404).json({
+                    message: "Inventory item not found"
+                });
+            }
+
+            const inventory =
+                inventoryRows[0];
+
+            const [checkoutRows] =
+                await connection.query(
+                    `
+                    SELECT
+                        COALESCE(
+                            SUM(quantity),
+                            0
+                        ) AS total_checked_out
+
+                    FROM checkouts
+
+                    WHERE inventory_id = ?
+                    `,
+                    [inventory_id]
+                );
+
+            const alreadyCheckedOut =
+                Number(
+                    checkoutRows[0]
+                        .total_checked_out
+                ) || 0;
+
+            const available =
+                Number(inventory.received) -
+                alreadyCheckedOut;
+
+            if (Number(quantity) > available) {
+
+                await connection.rollback();
+
+                return res.status(400).json({
+                    message:
+                        `Only ${available} items are available`
+                });
+            }
+
+            const [result] =
+                await connection.query(
+                    `
+                    INSERT INTO checkouts
+                    (
+                        inventory_id,
+                        quantity,
+                        checked_out_to,
+                        checked_out_by,
+                        purpose
+                    )
+
+                    VALUES (?, ?, ?, ?, ?)
+                    `,
+                    [
+                        inventory_id,
+                        Number(quantity),
+                        checked_out_to,
+                        req.user.id,
+                        purpose || ""
+                    ]
+                );
+
+            await connection.commit();
+
+            res.json({
+                success: true,
+                id: result.insertId,
+                message:
+                    "Inventory checked out successfully"
+            });
+
+        } catch (error) {
+
+            await connection.rollback();
+
+            console.error(
+                "CHECKOUT ERROR:",
+                error
+            );
+
+            res.status(500).json({
+                message: "Checkout failed"
+            });
+
+        } finally {
+
+            connection.release();
+        }
+    }
+);
+
+
+// ================= GET PROJECTS =================
+
+app.get(
+    "/api/projects",
+    authenticateToken,
+
     async (req, res) => {
 
         try {
 
-            const name = req.body.name?.trim();
+            const [rows] =
+                await pool.query(
+                    `
+                    SELECT id, name
+
+                    FROM projects
+
+                    ORDER BY name ASC
+                    `
+                );
+
+            res.json(rows);
+
+        } catch (error) {
+
+            console.error(
+                "GET PROJECTS ERROR:",
+                error
+            );
+
+            res.status(500).json({
+                message: "Failed to load projects"
+            });
+        }
+    }
+);
+
+
+// ================= ADD PROJECT =================
+
+app.post(
+    "/api/projects",
+    authenticateToken,
+    authorizeRoles("admin", "manager"),
+
+    async (req, res) => {
+
+        try {
+
+            const name =
+                req.body.name?.trim();
 
             if (!name) {
+
                 return res.status(400).json({
-                    message: 'Project name is required'
+                    message:
+                        "Project name is required"
                 });
             }
 
-            const [result] = await pool.query(
-                'INSERT INTO projects (name) VALUES (?)',
-                [name]
-            );
+            const [result] =
+                await pool.query(
+                    `
+                    INSERT INTO projects (name)
+
+                    VALUES (?)
+                    `,
+                    [name]
+                );
 
             res.json({
                 success: true,
@@ -404,120 +664,26 @@ app.post(
 
         } catch (error) {
 
-            if (error.code === 'ER_DUP_ENTRY') {
-                return res.status(409).json({
-                    message: 'Project already exists'
-                });
-            }
-
-            console.error(error);
+            console.error(
+                "ADD PROJECT ERROR:",
+                error
+            );
 
             res.status(500).json({
-                message: 'Failed to add project'
+                message:
+                    "Failed to add project"
             });
         }
     }
 );
-
-
-// DELETE project
-// Admin only
-
-app.delete(
-    '/api/projects/:name',
-    authenticateToken,
-    authorizeRoles('admin'),
-    async (req, res) => {
-
-        try {
-
-            const name = req.params.name;
-
-            const [used] = await pool.query(
-                'SELECT id FROM inventory WHERE project = ? LIMIT 1',
-                [name]
-            );
-
-            if (used.length > 0) {
-                return res.status(400).json({
-                    message: 'Project still has inventory records'
-                });
-            }
-
-            await pool.query(
-                'DELETE FROM projects WHERE name = ?',
-                [name]
-            );
-
-            res.json({
-                success: true
-            });
-
-        } catch (error) {
-
-            console.error(error);
-
-            res.status(500).json({
-                message: 'Failed to delete project'
-            });
-        }
-    }
-);
-
-
-// ================= CREATE ADMIN =================
-// Temporary route. Remove this after creating admin accounts.
-
-app.post('/api/create-admin', async (req, res) => {
-
-    try {
-
-        const {
-            username,
-            email,
-            password
-        } = req.body;
-
-        if (!username || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Username, email and password are required'
-            });
-        }
-
-        const passwordHash = await bcrypt.hash(password, 10);
-
-       const [result] = await pool.query(
-        `INSERT INTO users
-        (username, email, password, role)
-        VALUES (?, ?, ?, 'admin')`,
-        [
-            username,
-            email,
-            passwordHash
-        ]
-    );
-
-        res.json({
-            success: true,
-            message: 'Admin created successfully',
-            id: result.insertId
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create admin'
-        });
-    }
-});
 
 
 // ================= START SERVER =================
 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+
+    console.log(
+        `Server running on http://localhost:${PORT}`
+    );
+
 });

@@ -1,457 +1,893 @@
+const API_URL =
+    "http://localhost:5000/api";
 
-(function(){
+const token =
+    localStorage.getItem("token");
 
-  const API_URL = 'http://192.168.8.188:5000/api';
-
-    let records = [];
-    let projects = [];
-    let activeTab = 'ledger';
-    let dashProject = '';
-
-
-  /* ================= BASIC FUNCTIONS ================= */
-
-  const uid = () =>
-    'r' +
-    Math.random().toString(36).slice(2,10) +
-    Date.now().toString(36);
-
-
-  const todayStr = () =>
-    new Date().toISOString().slice(0,10);
-
-
-  const money = (n) =>
-    '₨' +
-    Math.round(n).toLocaleString('en-PK');
-
-
-  const num = (n) =>
-    (
-      Math.round(
-        (n + Number.EPSILON) * 100
-      ) / 100
-    ).toLocaleString('en-PK');
-
-
-  /* ================= SAMPLE DATA ================= */
-
-  const SEED = [
-
-    {
-      project:'Faisal Heights',
-      item:'Steel',
-      grade:'#4',
-      po:'PO-3100',
-      unit:'Tons',
-      rate:216000,
-      demand:258,
-      received:180,
-      updated:'2026-08-17',
-      remarks:'Template sample'
-    },
-
-    {
-      project:'Faisal Heights',
-      item:'Cement',
-      grade:'OPC 50kg',
-      po:'PO-3101',
-      unit:'Bag',
-      rate:1450,
-      demand:5000,
-      received:3200,
-      updated:'2026-08-17',
-      remarks:'Template sample'
-    },
-
-    {
-      project:'Faisal Heights',
-      item:'Sand',
-      grade:'Fine',
-      po:'PO-3101',
-      unit:'Cum',
-      rate:6800,
-      demand:450,
-      received:300,
-      updated:'2026-08-17',
-      remarks:'Template sample'
-    },
-
-    {
-      project:'Faisal Heights',
-      item:'Scaffolding',
-      grade:'Standard',
-      po:'PO-3102',
-      unit:'Nos',
-      rate:9500,
-      demand:650,
-      received:500,
-      updated:'2026-08-17',
-      remarks:'Template sample'
-    },
-
-    {
-      project:'Faisal Heights',
-      item:'DB Panel',
-      grade:'12 Way',
-      po:'PO-3103',
-      unit:'Nos',
-      rate:48000,
-      demand:30,
-      received:18,
-      updated:'2026-08-17',
-      remarks:'Template sample'
-    },
-
-    {
-      project:'Faisal Heights',
-      item:'Safety Helmet',
-      grade:'Standard',
-      po:'PO-3104',
-      unit:'Nos',
-      rate:1250,
-      demand:250,
-      received:200,
-      updated:'2026-08-17',
-      remarks:'Reorder needed'
-    },
-
-    {
-      project:'Faisal Jewel',
-      item:'Steel',
-      grade:'#4',
-      po:'PO-3200',
-      unit:'Tons',
-      rate:224640,
-      demand:278.64,
-      received:194.4,
-      updated:'2026-08-17',
-      remarks:'Template sample'
-    },
-
-    {
-      project:'Faisal Jewel',
-      item:'Cement',
-      grade:'OPC 50kg',
-      po:'PO-3201',
-      unit:'Bag',
-      rate:1508,
-      demand:5400,
-      received:3456,
-      updated:'2026-08-17',
-      remarks:'Template sample'
-    },
-
-    {
-      project:'Faisal Jewel',
-      item:'Brick',
-      grade:'A Class',
-      po:'PO-3202',
-      unit:'Nos',
-      rate:29.12,
-      demand:27000,
-      received:17280,
-      updated:'2026-08-17',
-      remarks:'Template sample'
-    },
-
-    {
-      project:'Faisal Jewel',
-      item:'Angle Grinder',
-      grade:'5 inch',
-      po:'PO-3204',
-      unit:'Nos',
-      rate:18500,
-      demand:25,
-      received:18,
-      updated:'2026-08-17',
-      remarks:'Fully deployed to crews'
-    }
-
-  ].map(r => ({
-    id:uid(),
-    ...r
-  }));
-
-
-  /* ================= COST ================= */
-
-  function computeCost(r){
-
-    return (
-      Number(r.rate) || 0
-    ) * (
-      Number(r.received) || 0
+const user =
+    JSON.parse(
+        localStorage.getItem("user") ||
+        "null"
     );
 
-  }
+if (!token || !user) {
 
-
-  /* ================= LOAD RECORDS ================= */
-
-  async function loadRecords() {
-    try {
-        console.log('Loading inventory from MySQL...');
-
-        const response = await fetch(
-            'http://localhost:5000/api/inventory'
-        );
-
-        console.log('Server response:', response.status);
-
-        if (!response.ok) {
-            throw new Error(
-                `Server returned ${response.status}`
-            );
-        }
-
-        const data = await response.json();
-
-        console.log('Inventory received:', data);
-
-        records = data.map(record => ({
-            id: Number(record.id),
-            project: record.project || '',
-            item: record.item || '',
-            grade: record.grade || '',
-            po: record.po || '',
-            unit: record.unit || '',
-            rate: Number(record.rate) || 0,
-            demand: Number(record.demand) || 0,
-            received: Number(record.received) || 0,
-            updated: record.updated
-                ? record.updated.slice(0, 10)
-                : '',
-            remarks: record.remarks || ''
-        }));
-
-        console.log(
-            'Inventory loaded successfully:',
-            records
-        );
-
-    } catch (error) {
-
-        console.error(
-            'Inventory loading error:',
-            error
-        );
-
-        alert(
-            'Unable to load inventory from server. Check the browser console.'
-        );
-    }
+    window.location.href =
+        "login.html";
 }
 
 
-  /* ================= SAVE RECORDS ================= */
+// ================= DATA =================
 
-  
-  /* ================= PROJECTS ================= */
+let records = [];
 
-  async function loadProjects() {
-    try {
+let projects = [];
 
-        const response =
-            await fetch(`${API_URL}/projects`);
+let checkouts = [];
 
-        if (!response.ok) {
-            throw new Error('Failed to load projects');
-        }
+let selectedCheckoutRecord = null;
 
-        const data =
-            await response.json();
+let editingRecordId = null;
 
-        projects =
-            data.map(p => p.name);
+let activeTab = "ledger";
 
-        console.log(
-            'Projects loaded from MySQL:',
-            projects
-        );
+let dashProject = "";
 
-    } catch (error) {
+const currentRole =
+    user?.role || "viewer";
 
-        console.error(
-            'Failed to load projects:',
-            error
-        );
+const canEdit = [
+    "admin",
+    "manager"
+].includes(currentRole);
 
-        alert(
-            'Unable to load projects from the server.'
-        );
-    }
+const canCheckout = [
+    "admin",
+    "manager",
+    "engineer"
+].includes(currentRole);
+
+// ================= PERMISSIONS =================
+
+function getRole() {
+
+    return user?.role || "viewer";
 }
 
 
-  
-  function uniqueProjects(){
-
-    const fromRecords =
-      records
-      .map(r => r.project)
-      .filter(Boolean);
-
+function canManageInventory() {
 
     return [
-      ...new Set([
-        ...projects,
-        ...fromRecords
-      ])
-    ].sort();
+        "admin",
+        "manager"
+    ].includes(getRole());
 
-  }
+}
 
 
-  async function addProject(name) {
+function canDeleteInventory() {
 
-    name = name.trim();
+    return getRole() === "admin";
+}
 
-    if (!name) {
+
+
+
+// ================= AUTH =================
+
+function authHeaders(json = false) {
+
+    const headers = {
+
+        Authorization:
+            `Bearer ${localStorage.getItem("token")}`
+    };
+
+    if (json) {
+
+        headers["Content-Type"] =
+            "application/json";
+    }
+
+    return headers;
+}
+
+
+// ================= HELPERS =================
+
+function money(number) {
+
+    return (
+        "₨" +
+        Math.round(
+            Number(number) || 0
+        ).toLocaleString("en-PK")
+    );
+}
+
+
+function num(number) {
+
+    return (
+        Number(number) || 0
+    ).toLocaleString("en-PK");
+}
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+// ================= API RESPONSE =================
+
+async function handleApiResponse(response) {
+
+    if (
+        response.status === 401 ||
+        response.status === 403
+    ) {
+
+        const data =
+            await response.json()
+                .catch(() => null);
+
+        if (
+            response.status === 401
+        ) {
+
+            localStorage.clear();
+
+            window.location.href =
+                "login.html";
+        }
+
+        throw new Error(
+            data?.message ||
+            "Access denied"
+        );
+    }
+
+    return response;
+}
+
+
+// ================= LOAD PROJECTS =================
+
+async function loadProjects() {
+
+    const response =
+        await fetch(
+            `${API_URL}/projects`,
+            {
+                headers:
+                    authHeaders()
+            }
+        );
+
+    await handleApiResponse(
+        response
+    );
+
+    if (!response.ok) {
+
+        throw new Error(
+            "Failed to load projects"
+        );
+    }
+
+    const data =
+        await response.json();
+
+    projects = data;
+}
+
+function populateInventoryProjectDropdown() {
+    const select = document.getElementById("in-project");
+
+    if (!select) {
+        console.error("in-project dropdown not found");
         return;
     }
 
-    try {
+    select.innerHTML = `
+        <option value="">Select Project</option>
+    `;
 
-        const response =
-            await fetch(`${API_URL}/projects`, {
-                method: 'POST',
+    projects.forEach(project => {
+        const option = document.createElement("option");
 
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+        option.value = project.name;
+        option.textContent = project.name;
 
-                body: JSON.stringify({
-                    name: name
-                })
-            });
+        select.appendChild(option);
+    });
+}
 
-        const data =
-            await response.json();
+// ================= LOAD INVENTORY =================
 
-        if (!response.ok) {
-            alert(data.message || 'Failed to add project');
-            return;
+async function loadRecords() {
+
+    const response =
+        await fetch(
+            `${API_URL}/inventory`,
+            {
+                headers:
+                    authHeaders()
+            }
+        );
+
+    await handleApiResponse(
+        response
+    );
+
+    if (!response.ok) {
+
+        throw new Error(
+            "Failed to load inventory"
+        );
+    }
+
+    const data =
+        await response.json();
+
+    records =
+        data.map(record => ({
+            ...record,
+
+            rate:
+                Number(record.rate) || 0,
+
+            demand:
+                Number(record.demand) || 0,
+
+            received:
+                Number(record.received) || 0,
+
+            checked_out:
+                Number(record.checked_out) || 0
+        }));
+}
+
+
+// ================= LOAD CHECKOUTS =================
+
+async function loadCheckouts() {
+
+    const response =
+        await fetch(
+            `${API_URL}/checkouts`,
+            {
+                headers:
+                    authHeaders()
+            }
+        );
+
+    await handleApiResponse(
+        response
+    );
+
+    if (!response.ok) {
+
+        throw new Error(
+            "Failed to load checkouts"
+        );
+    }
+
+    checkouts =
+        await response.json();
+}
+
+
+// ================= AVAILABLE =================
+
+function availableQuantity(record) {
+
+    return Math.max(
+        0,
+
+        Number(record.received) -
+        Number(record.checked_out)
+    );
+}
+
+
+// ================= PROJECT OPTIONS =================
+
+function uniqueProjects() {
+
+    return [
+        ...new Set(
+            projects.map(
+                project =>
+                    project.name
+            )
+        )
+    ]
+        .filter(Boolean)
+        .sort();
+}
+
+
+function renderProjectFilterOptions() {
+
+    const select =
+        document.getElementById(
+            "f-project"
+        );
+
+    if (!select) return;
+
+    const current =
+        select.value;
+
+    select.innerHTML =
+        `<option value="">
+            All Projects
+        </option>` +
+
+        uniqueProjects()
+            .map(
+                project =>
+                    `<option value="${escapeHtml(project)}">
+                        ${escapeHtml(project)}
+                    </option>`
+            )
+            .join("");
+
+    select.value =
+        current;
+}
+
+
+// ================= FILTER =================
+
+function filteredLedgerRecords() {
+
+    const search =
+        document
+            .getElementById("f-search")
+            ?.value
+            .toLowerCase() || "";
+
+    const project =
+        document
+            .getElementById("f-project")
+            ?.value || "";
+
+    return records.filter(
+        record => {
+
+            const text = [
+                record.project,
+                record.item,
+                record.grade,
+                record.po_reference,
+                record.unit
+            ]
+                .join(" ")
+                .toLowerCase();
+
+            return (
+                (!project ||
+                    record.project === project
+                ) &&
+
+                (!search ||
+                    text.includes(search)
+                )
+            );
         }
+    );
+}
 
-        projects.push(name);
 
-        projects.sort();
+// ================= RENDER LEDGER =================
 
-        renderAll();
+function renderLedger() {
 
-    } catch (error) {
+    renderProjectFilterOptions();
 
-        console.error(
-            'Failed to add project:',
-            error
+    const rows = filteredLedgerRecords();
+
+    const body =
+        document.getElementById("ledgerBody");
+
+    const emptyState =
+        document.getElementById("emptyState");
+
+    if (!body) return;
+
+    if (emptyState) {
+
+        emptyState.style.display =
+            rows.length
+                ? "none"
+                : "block";
+
+    }
+
+
+    body.innerHTML =
+        rows.map(record => {
+
+            const available =
+                availableQuantity(record);
+
+            const cost =
+                record.rate *
+                record.received;
+
+
+            return `
+
+                <tr data-id="${record.id}">
+
+                   <td
+                        class="${canEdit ? "editable" : ""}"
+                        data-field="project"
+                    >
+                        ${escapeHtml(record.project)}
+                    </td>
+
+                    <td
+                        class="${canEdit ? "editable" : ""}"
+                        data-field="item"
+                    >
+                        ${escapeHtml(record.item)}
+                    </td>
+
+
+                    <td
+                        class="${canEdit ? "editable" : ""}"
+                        data-field="grade"
+                    >
+                        ${escapeHtml(record.grade)}
+                    </td>
+
+
+                    <td
+                        class="${canEdit ? "editable" : ""}"
+                        data-field="po_reference"
+                    >
+                        ${escapeHtml(record.po_reference)}
+                    </td>
+
+
+                    <td
+                        class="${canEdit ? "editable" : ""}"
+                        data-field="unit"
+                    >
+                        ${escapeHtml(record.unit)}
+                    </td>
+
+
+                    <td
+                        class="num ${canEdit ? "editable" : ""}"
+                        data-field="rate"
+                    >
+                        ${canEdit
+                            ? `<input
+                                type="number"
+                                value="${record.rate}"
+                                data-field="rate"
+                            >`
+                            : money(record.rate)
+                        }
+                    </td>
+
+
+                    <td
+                        class="num ${canEdit ? "editable" : ""}"
+                        data-field="demand"
+                    >
+                        ${canEdit
+                            ? `<input
+                                type="number"
+                                value="${record.demand}"
+                                data-field="demand"
+                            >`
+                            : num(record.demand)
+                        }
+                    </td>
+
+
+                    <td
+                        class="num ${canEdit ? "editable" : ""}"
+                        data-field="received"
+                    >
+                        ${canEdit
+                            ? `<input
+                                type="number"
+                                value="${record.received}"
+                                data-field="received"
+                            >`
+                            : num(record.received)
+                        }
+                    </td>
+
+
+                    <td class="num available-qty">
+
+                        ${num(available)}
+
+                    </td>
+
+
+                    <td class="num">
+
+                        ${money(cost)}
+
+                    </td>
+
+
+                    <td>
+
+                        ${
+                            record.updated_at
+                                ? new Date(
+                                    record.updated_at
+                                ).toLocaleDateString()
+                                : ""
+                        }
+
+                    </td>
+
+
+                    <td
+                        class="${canEdit ? "editable" : ""}"
+                        data-field="remarks"
+                    >
+
+                        ${escapeHtml(record.remarks)}
+
+                    </td>
+
+
+                   <td>
+                        <div class="rowbtns">
+
+                            ${
+                                canEdit
+                                    ? `
+                                        <button
+                                            type="button"
+                                            class="edit"
+                                            data-edit="${record.id}"
+                                        >
+                                            Edit
+                                        </button>
+                                    `
+                                    : ""
+                            }
+
+                            ${
+                                canCheckout
+                                    ? `
+                                        <button
+                                            type="button"
+                                            class="checkout-btn"
+                                            data-checkout="${record.id}"
+                                        >
+                                            Checkout
+                                        </button>
+                                    `
+                                    : ""
+                            }
+
+                            ${
+                                canDeleteInventory()
+                                    ? `
+                                        <button
+                                            type="button"
+                                            class="del"
+                                            data-delete="${record.id}"
+                                        >
+                                            Delete
+                                        </button>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+                    </td>
+
+                </tr>
+
+            `;
+
+        }).join("");
+
+
+    const recordCount =
+        document.getElementById(
+            "recordCountStamp"
         );
 
+
+    if (recordCount) {
+
+        recordCount.textContent =
+            `${records.length} ITEMS ON RECORD`;
+
+    }
+
+}
+
+// ================= INVENTORY FORM =================
+
+function openInventoryForm(id = null) {
+
+    if (!canManageInventory()) {
         alert(
-            'Unable to connect to the backend server.'
+            "You do not have permission to manage inventory."
         );
+        return;
+    }
+
+    // If checkout panel is open, close it
+    closeCheckout();
+
+    editingRecordId = id;
+
+    const panel =
+        document.getElementById("inventoryPanel");
+
+    if (!panel) {
+        console.error("inventoryPanel not found");
+        return;
+    }
+
+    // Load project dropdown
+    populateInventoryProjectDropdown();
+
+    // Find record when editing
+    const record = id
+        ? records.find(
+            item =>
+                String(item.id) === String(id)
+        )
+        : null;
+
+    // Change title
+    const title =
+        document.getElementById(
+            "inventoryFormTitle"
+        );
+
+    if (title) {
+        title.textContent = record
+            ? "Edit Inventory Item"
+            : "Add Inventory Item";
+    }
+
+    // Fill form
+    document.getElementById("in-project").value =
+        record?.project || "";
+
+    document.getElementById("in-item").value =
+        record?.item || "";
+
+    document.getElementById("in-grade").value =
+        record?.grade || "";
+
+    document.getElementById("in-po").value =
+        record?.po_reference || "";
+
+    document.getElementById("in-unit").value =
+        record?.unit || "";
+
+    document.getElementById("in-rate").value =
+        record?.rate || 0;
+
+    document.getElementById("in-demand").value =
+        record?.demand || 0;
+
+    document.getElementById("in-received").value =
+        record?.received || 0;
+
+    document.getElementById("in-remarks").value =
+        record?.remarks || "";
+
+    // Show inventory panel
+    panel.style.display = "block";
+}
+
+function closeInventoryForm() {
+
+    editingRecordId = null;
+
+    const panel =
+        document.getElementById(
+            "inventoryPanel"
+        );
+
+    if (panel) {
+        panel.style.display = "none";
     }
 }
 
 
-  async function removeProject(name) {
+async function saveInventory() {
 
-    const inUse =
-        records.some(
-            r => r.project === name
-        );
-
-    if (inUse) {
+    if (!canManageInventory()) {
 
         alert(
-            `Can't remove "${name}" — it still has ledger entries. Delete or reassign those items first.`
+            "You do not have permission to manage inventory."
         );
 
         return;
     }
 
-    if (!confirm(`Remove project "${name}"?`)) {
+    const payload = {
+
+        project:
+            document
+                .getElementById("in-project")
+                .value
+                .trim(),
+
+        item:
+            document
+                .getElementById("in-item")
+                .value
+                .trim(),
+
+        grade:
+            document
+                .getElementById("in-grade")
+                .value
+                .trim(),
+
+        po_reference:
+            document
+                .getElementById("in-po")
+                .value
+                .trim(),
+
+        unit:
+            document
+                .getElementById("in-unit")
+                .value
+                .trim(),
+
+        rate:
+            Number(
+                document
+                    .getElementById("in-rate")
+                    .value
+            ) || 0,
+
+        demand:
+            Number(
+                document
+                    .getElementById("in-demand")
+                    .value
+            ) || 0,
+
+        received:
+            Number(
+                document
+                    .getElementById("in-received")
+                    .value
+            ) || 0,
+
+        remarks:
+            document
+                .getElementById("in-remarks")
+                .value
+                .trim()
+    };
+
+    if (!payload.project) {
+
+        alert("Please select a project.");
+
         return;
     }
+
+    if (!payload.item) {
+
+        alert("Item name is required.");
+
+        return;
+    }
+
+    const wasEditing =
+        editingRecordId !== null;
+
+    const url =
+        wasEditing
+            ? `${API_URL}/inventory/${editingRecordId}`
+            : `${API_URL}/inventory`;
+
+    const method =
+        wasEditing
+            ? "PUT"
+            : "POST";
 
     try {
 
         const response =
             await fetch(
-                `${API_URL}/projects/${encodeURIComponent(name)}`,
+                url,
                 {
-                    method: 'DELETE'
+                    method,
+                    headers:
+                        authHeaders(true),
+                    body:
+                        JSON.stringify(payload)
                 }
             );
 
         const data =
-            await response.json();
+            await response
+                .json()
+                .catch(() => ({}));
 
         if (!response.ok) {
+
             alert(
                 data.message ||
-                'Failed to remove project'
+                "Failed to save inventory."
             );
 
             return;
         }
 
-        projects =
-            projects.filter(
-                p => p !== name
-            );
+        closeInventoryForm();
+
+        await loadRecords();
 
         renderAll();
+
+        alert(
+            wasEditing
+                ? "Inventory updated successfully."
+                : "Inventory added successfully."
+        );
 
     } catch (error) {
 
         console.error(
-            'Failed to remove project:',
+            "Save inventory error:",
             error
         );
 
         alert(
-            'Unable to connect to the backend server.'
+            "Unable to connect to backend."
         );
     }
 }
-async function saveRecordToDatabase(record) {
 
-    try {
 
-        const response = await fetch(
-            `http://localhost:5000/api/inventory/${record.id}`,
-            {
-                method: 'PUT',
+// ================= DELETE =================
 
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+async function deleteInventory(id) {
 
-                body: JSON.stringify(record)
-            }
+    if (!canDeleteInventory()) {
+
+        alert(
+            "Only administrators can delete inventory."
         );
 
-        if (!response.ok) {
-            throw new Error('Save failed');
-        }
-
-        console.log(
-            'Saved to MySQL:',
-            record
-        );
-
-    } catch (error) {
-
-        console.error(
-            'MySQL save error:',
-            error
-        );
-
-        alert('Could not save changes.');
+        return;
     }
-}
-async function deleteRecordFromDatabase(id) {
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete this inventory item?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
 
     try {
 
@@ -459,1396 +895,1286 @@ async function deleteRecordFromDatabase(id) {
             await fetch(
                 `${API_URL}/inventory/${id}`,
                 {
-                    method: 'DELETE'
+                    method: "DELETE",
+                    headers:
+                        authHeaders()
                 }
             );
 
+        const data =
+            await response
+                .json()
+                .catch(() => ({}));
+
         if (!response.ok) {
-            throw new Error(
-                'Failed to delete record'
+
+            alert(
+                data.message ||
+                "Failed to delete item."
             );
+
+            return;
         }
 
-        records =
-            records.filter(
-                r => r.id !== id
-            );
+        await loadRecords();
 
         renderAll();
+
+        alert(
+            "Inventory item deleted successfully."
+        );
 
     } catch (error) {
 
         console.error(
-            'Failed to delete record:',
+            "Delete error:",
             error
         );
 
         alert(
-            'Unable to delete record from database.'
+            "Unable to connect to backend."
         );
     }
 }
-  /* ================= ESCAPE HTML ================= */
 
-  function escapeHtml(s){
 
-    return String(s ?? '')
-      .replace(
-        /[&<>"']/g,
-        c => ({
-          '&':'&amp;',
-          '<':'&lt;',
-          '>':'&gt;',
-          '"':'&quot;',
-          "'":'&#39;'
-        }[c])
-      );
-
-  }
-
-
-  /* ================= AUTO CELL WIDTH ================= */
-
-  const _measureCanvas =
-    document.createElement('canvas');
-
-  const _measureCtx =
-    _measureCanvas.getContext('2d');
-
-
-  function textWidthPx(
-    text,
-    font
-  ){
-
-    _measureCtx.font = font;
-
-    return _measureCtx.measureText(
-      text || ''
-    ).width;
-
-  }
-
-
-  function autoSizeCell(el){
-
-    const cs =
-      getComputedStyle(el);
-
-
-    const font =
-      `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-
-
-    let text;
-
-
-    if(el.tagName === 'SELECT'){
-
-      text =
-        el.options[
-          el.selectedIndex
-        ]
-        ?
-        el.options[
-          el.selectedIndex
-        ].text
-        :
-        '';
-
-    }else{
-
-      text =
-        el.value ||
-        el.placeholder ||
-        '';
-
-    }
-
-
-    const measured =
-      textWidthPx(
-        text,
-        font
-      );
-
-
-    const BUFFER = 12;
-
-    const MIN =
-      el.classList.contains(
-        'cell-narrow'
-      )
-      ?
-      40
-      :
-      35;
-
-
-    const MAX =
-      el.classList.contains(
-        'cell-remarks'
-      )
-      ?
-      250
-      :
-      180;
-
-
-    el.style.width =
-      Math.min(
-        MAX,
-        Math.max(
-          MIN,
-          Math.round(
-            measured + BUFFER
-          )
-        )
-      ) + 'px';
-
-  }
-
-
-  function autoSizeAllCells(root){
-
-    root
-      .querySelectorAll(
-        '.cell-input, .cell-select'
-      )
-      .forEach(
-        autoSizeCell
-      );
-
-  }
-
-
-  /* ================= PROJECT FILTER ================= */
-
-  function renderProjectFilterOptions(){
-
-    const sel =
-      document.getElementById(
-        'f-project'
-      );
-
-
-    const current =
-      sel.value;
-
-
-    sel.innerHTML =
-      '<option value="">All Projects</option>' +
-
-      uniqueProjects()
-        .map(
-          p =>
-          `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`
-        )
-        .join('');
-
-
-    sel.value = current;
-
-  }
-
-
-  /* ================= MANAGE PROJECTS ================= */
-
-  function renderManageProjectsPanel(){
-
-    const wrap =
-      document.getElementById(
-        'projectChipsManage'
-      );
-
-
-    const list =
-      uniqueProjects();
-
-
-    if(list.length === 0){
-
-      wrap.innerHTML =
-        '<p style="font-family:Arial, Helvetica, sans-serif;font-size:12px;color:var(--steel);">No projects yet — add your first one above.</p>';
-
-      return;
-
-    }
-
-
-    wrap.innerHTML =
-      list
-      .map(
-        p => `
-          <span
-            class="chip"
-            style="display:inline-flex;align-items:center;gap:8px;cursor:default;"
-          >
-
-            ${escapeHtml(p)}
-
-            <button
-              class="del"
-              data-project="${escapeHtml(p)}"
-              style="
-                background:none;
-                border:none;
-                color:var(--rebar);
-                cursor:pointer;
-                font-family:Arial, Helvetica, sans-serif;
-                font-size:13px;
-              "
-            >
-              ×
-            </button>
-
-          </span>
-        `
-      )
-      .join('');
-
-
-    wrap
-      .querySelectorAll(
-        'button.del'
-      )
-      .forEach(
-        btn =>
-        btn.addEventListener(
-          'click',
-          () =>
-          removeProject(
-            btn.dataset.project
-          )
-        )
-      );
-
-  }
-
-
-  /* ================= FILTER LEDGER ================= */
-
-  function filteredLedgerRecords(){
-
-    const search =
-      document
-      .getElementById(
-        'f-search'
-      )
-      .value
-      .trim()
-      .toLowerCase();
-
-
-    const proj =
-      document.getElementById(
-        'f-project'
-      ).value;
-
-
-    return records.filter(r => {
-
-      if(
-        proj &&
-        r.project !== proj
-      )
-        return false;
-
-
-      if(search){
-
-        const hay =
-          [
-            r.project,
-            r.item,
-            r.grade,
-            r.po,
-            r.remarks
-          ]
-          .join(' ')
-          .toLowerCase();
-
-
-        if(
-          !hay.includes(search)
-        )
-          return false;
-
-      }
-
-
-      return true;
-
-    });
-
-  }
-
-
-  /* ================= PROJECT OPTIONS ================= */
-
-  function projectOptionsHtml(
-    selected
-  ){
-
-    return uniqueProjects()
-      .map(
-        p =>
-        `<option
-          value="${escapeHtml(p)}"
-          ${p === selected ? 'selected' : ''}
-        >
-          ${escapeHtml(p)}
-        </option>`
-      )
-      .join('');
-
-  }
-
-
-  /* ================= RENDER LEDGER ================= */
-
-  function renderLedger(){
-
-    renderProjectFilterOptions();
-
-
-    const rows =
-      filteredLedgerRecords();
-
-
-    const body =
-      document.getElementById(
-        'ledgerBody'
-      );
-
-
-    document.getElementById(
-      'emptyState'
-    ).style.display =
-      rows.length
-      ?
-      'none'
-      :
-      'block';
-
-
-    body.innerHTML =
-      rows
-      .map(r => {
-
-        const cost =
-          computeCost(r);
-
-
-        return `
-
-          <tr data-id="${r.id}">
-
-            <td>
-              <select
-                class="cell-select"
-                data-field="project"
-              >
-                ${projectOptionsHtml(r.project)}
-              </select>
-            </td>
-
-
-            <td>
-              <input
-                class="cell-input"
-                type="text"
-                data-field="item"
-                value="${escapeHtml(r.item)}"
-              >
-            </td>
-
-
-            <td>
-              <input
-                class="cell-input"
-                type="text"
-                data-field="grade"
-                value="${escapeHtml(r.grade)}"
-              >
-            </td>
-
-
-            <td>
-              <input
-                class="cell-input"
-                type="text"
-                data-field="po"
-                value="${escapeHtml(r.po)}"
-              >
-            </td>
-
-
-            <td>
-              <input
-                class="cell-input cell-narrow"
-                type="text"
-                data-field="unit"
-                value="${escapeHtml(r.unit)}"
-              >
-            </td>
-
-
-            <td>
-              <input
-                class="cell-input cell-narrow"
-                type="number"
-                step="0.01"
-                min="0"
-                data-field="rate"
-                value="${r.rate}"
-              >
-            </td>
-
-
-            <td>
-              <input
-                class="cell-input cell-narrow"
-                type="number"
-                step="0.01"
-                min="0"
-                data-field="demand"
-                value="${r.demand}"
-              >
-            </td>
-
-
-            <td>
-              <input
-                class="cell-input cell-narrow"
-                type="number"
-                step="0.01"
-                min="0"
-                data-field="received"
-                value="${r.received}"
-              >
-            </td>
-
-
-            <td
-              class="cost-cell"
-              data-cost-for="${r.id}"
-            >
-              ${money(cost)}
-            </td>
-
-
-            <td class="updated-cell">
-              ${r.updated || ''}
-            </td>
-
-
-            <td>
-              <input
-                class="cell-input cell-remarks"
-                type="text"
-                data-field="remarks"
-                value="${escapeHtml(r.remarks || '')}"
-              >
-            </td>
-
-
-            <td>
-
-              <div class="rowbtns">
-
-                <button class="del">
-                  Delete
-                </button>
-
-              </div>
-
-            </td>
-
-          </tr>
-
-        `;
-
-      })
-      .join('');
-
-
-    document.getElementById(
-      'recordCountStamp'
-    ).textContent =
-      `${records.length} ITEM${records.length === 1 ? '' : 'S'} ON RECORD`;
-
-
-    autoSizeAllCells(body);
-
-
-    body
-      .querySelectorAll(
-        'button.del'
-      )
-      .forEach(
-        btn => {
-
-          btn.addEventListener(
-            'click',
-            e => {
-
-              const id =
-                e.target
-                .closest('tr')
-                .dataset.id;
-
-
-              if(
-                confirm(
-                  'Delete this ledger entry?'
-                )
-              ){
-
-                deleteRecordFromDatabase(id);
-
-              }
-
-            }
-          );
-
-        }
-      );
-
-  }
-
-
-  /* ================= FIND RECORD ================= */
-
-  function findRecord(id){
-    return records.find(
-        r => String(r.id) === String(id)
-    );
-}
-  
-
-  /* ================= LIVE INPUT ================= */
-
-  document
-    .getElementById(
-      'ledgerBody'
-    )
-    .addEventListener(
-      'input',
-       e => {
-
-        const target =
-          e.target;
-
-
-        if(
-          !target.dataset.field
-        )
-          return;
-
-
-        const tr =
-          target.closest('tr');
-
-
-        const id =
-          tr.dataset.id;
-
-
-        const r =
-          findRecord(id);
-
-
-        if(!r)
-          return;
-
-
-        const field =
-          target.dataset.field;
-
-
-        const numericFields =
-          [
-            'rate',
-            'demand',
-            'received'
-          ];
-
-
-        r[field] =
-          numericFields.includes(field)
-          ?
-          (Number(target.value) || 0)
-          :
-          target.value;
-
-
-        if(
-          field === 'rate' ||
-          field === 'received'
-        ){
-
-          const costCell =
-            tr.querySelector(
-              `.cost-cell[data-cost-for="${id}"]`
-            );
-
-
-          if(costCell)
-            costCell.textContent =
-              money(
-                computeCost(r)
-              );
-
-        }
-
-
-        autoSizeCell(target);
-
-      }
+// ================= CHECKOUT =================
+function openCheckout(id) {
+    const record = records.find(
+        record => String(record.id) === String(id)
     );
 
-
-  /* ================= COMMIT CHANGES ================= */
-
-  document
-    .getElementById('ledgerBody')
-    .addEventListener('change', async e => {
-
-        console.log('CHANGE EVENT FIRED');
-
-        const target = e.target;
-
-        console.log('Changed element:', target);
-
-        if (
-            target.matches('.cell-input, .cell-select')
-        ) {
-            autoSizeCell(target);
-        }
-
-        if (!target.dataset.field) {
-            console.log('No data-field found');
-            return;
-        }
-
-        const tr = target.closest('tr');
-
-        if (!tr) {
-            console.log('No table row found');
-            return;
-        }
-
-        const id = tr.dataset.id;
-
-        console.log('Record ID:', id);
-
-        const r = findRecord(id);
-
-        if (!r) {
-            console.log('Record not found:', id);
-            return;
-        }
-
-        const field = target.dataset.field;
-
-        const numericFields = [
-            'rate',
-            'demand',
-            'received'
-        ];
-
-        r[field] = numericFields.includes(field)
-            ? (Number(target.value) || 0)
-            : target.value;
-
-        r.updated = todayStr();
-
-        console.log('Updated local record:', r);
-
-        await saveRecordToDatabase(r);
-
-        renderAll();
-    });
-
-  /* ================= ADD ROW ================= */
-
-  async function addRow() {
-
-    const projList = uniqueProjects();
-
-    if (projList.length === 0) {
-        alert('Add a project first.');
-        openProjectPanel();
+    if (!record) {
         return;
     }
 
-    const proj =
-        document.getElementById('f-project').value ||
-        projList[0];
+    const available = availableQuantity(record);
 
-    const newRecord = {
-        project: proj,
-        item: '',
-        grade: '',
-        po: '',
-        unit: '',
-        rate: 0,
-        demand: 0,
-        received: 0,
-        remarks: '',
-        updated: todayStr()
-    };
+    if (available <= 0) {
+        alert("No quantity is available for checkout.");
+        return;
+    }
+
+    selectedCheckoutRecord = record;
+
+    // IMPORTANT:
+    // Close inventory/edit panel before opening checkout
+    closeInventoryForm();
+
+    // Fill checkout form
+    const checkoutItem =
+        document.getElementById("checkoutItem");
+
+    const checkoutAvailable =
+        document.getElementById("checkoutAvailable");
+
+    const checkoutQuantity =
+        document.getElementById("checkoutQuantity");
+
+    const checkoutTo =
+        document.getElementById("checkoutTo");
+
+    const checkoutPurpose =
+        document.getElementById("checkoutPurpose");
+
+    if (checkoutItem) {
+        checkoutItem.value =
+            `${record.item} (${record.project})`;
+    }
+
+    if (checkoutAvailable) {
+        checkoutAvailable.value =
+            `${available} ${record.unit || ""}`;
+    }
+
+    if (checkoutQuantity) {
+        checkoutQuantity.value = "";
+        checkoutQuantity.max = available;
+    }
+
+    if (checkoutTo) {
+        checkoutTo.value = "";
+    }
+
+    if (checkoutPurpose) {
+        checkoutPurpose.value = "";
+    }
+
+    // Open ONLY checkout panel
+    const checkoutPanel =
+        document.getElementById("checkoutPanel");
+
+    if (checkoutPanel) {
+        checkoutPanel.classList.add("open");
+    }
+}
+
+
+function closeCheckout() {
+
+    selectedCheckoutRecord = null;
+
+    const checkoutPanel =
+        document.getElementById(
+            "checkoutPanel"
+        );
+
+    if (checkoutPanel) {
+        checkoutPanel.classList.remove("open");
+    }
+}
+
+async function confirmCheckout() {
+
+    if (!selectedCheckoutRecord) return;
+
+    const quantity =
+        Number(
+            document
+                .getElementById(
+                    "checkoutQuantity"
+                )
+                .value
+        );
+
+    const checked_out_to =
+        document
+            .getElementById(
+                "checkoutTo"
+            )
+            .value
+            .trim();
+
+    const purpose =
+        document
+            .getElementById(
+                "checkoutPurpose"
+            )
+            .value
+            .trim();
+
+    if (
+        !quantity ||
+        quantity <= 0
+    ) {
+
+        alert(
+            "Enter a valid quantity."
+        );
+
+        return;
+    }
 
     try {
 
-        const response = await fetch(
-            'http://localhost:5000/api/inventory',
-            {
-                method: 'POST',
+        const response =
+            await fetch(
+                `${API_URL}/checkouts`,
+                {
+                    method: "POST",
 
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                    headers:
+                        authHeaders(true),
 
-                body: JSON.stringify(newRecord)
-            }
-        );
+                    body:
+                        JSON.stringify({
+                            inventory_id:
+                                selectedCheckoutRecord.id,
+
+                            quantity,
+
+                            checked_out_to,
+
+                            purpose
+                        })
+                }
+            );
+
+        const data =
+            await response.json();
 
         if (!response.ok) {
-            throw new Error('Could not save record');
+
+            alert(
+                data.message ||
+                "Checkout failed."
+            );
+
+            return;
         }
 
-        const data = await response.json();
+        closeCheckout();
 
-        newRecord.id = data.id;
+        await loadRecords();
 
-        records.push(newRecord);
+        await loadCheckouts();
 
         renderAll();
 
-        console.log('Saved to MySQL:', newRecord);
+        alert(
+            "Inventory checked out successfully."
+        );
 
     } catch (error) {
 
         console.error(error);
 
-        alert('Could not save record to MySQL.');
+        alert(
+            "Unable to connect to backend."
+        );
     }
 }
 
-  /* ================= PROJECT PANEL ================= */
 
-  function openProjectPanel(){
+// ================= ADD PROJECT =================
 
-    renderManageProjectsPanel();
+async function addProject() {
 
+    const input =
+        document.getElementById(
+            "in-newproject"
+        );
 
-    document
-      .getElementById(
-        'projectPanel'
-      )
-      .classList
-      .add('open');
+    const name =
+        input.value.trim();
 
+    if (!name) {
 
-    document
-      .getElementById(
-        'in-newproject'
-      )
-      .focus();
+        alert(
+            "Enter a project name."
+        );
 
-  }
+        return;
+    }
 
+    try {
 
-  function closeProjectPanel(){
+        const response =
+            await fetch(
+                `${API_URL}/projects`,
+                {
+                    method: "POST",
 
-    document
-      .getElementById(
-        'projectPanel'
-      )
-      .classList
-      .remove('open');
+                    headers:
+                        authHeaders(true),
 
-  }
+                    body:
+                        JSON.stringify({
+                            name
+                        })
+                }
+            );
 
+        const data =
+            await response.json();
 
-  /* ========================================================= */
-  /* ======================= DASHBOARD ======================= */
-  /* ========================================================= */
+        if (!response.ok) {
 
+            alert(
+                data.message ||
+                "Failed to add project."
+            );
 
-  function renderProjectChips(){
-
-    const projectsList =
-      uniqueProjects();
-
-
-    const chipBar =
-      document.getElementById(
-        'projectChips'
-      );
-
-
-    const chips = [
-
-      {
-        key:'',
-        label:'All Projects'
-      },
-
-      ...projectsList.map(
-        p => ({
-          key:p,
-          label:p
-        })
-      )
-
-    ];
-
-
-    chipBar.innerHTML =
-      chips
-      .map(
-        c =>
-        `
-          <button
-            class="chip ${dashProject === c.key ? 'active' : ''}"
-            data-key="${escapeHtml(c.key)}"
-          >
-            ${escapeHtml(c.label)}
-          </button>
-        `
-      )
-      .join('');
-
-
-    chipBar
-      .querySelectorAll(
-        '.chip'
-      )
-      .forEach(
-        btn => {
-
-          btn.addEventListener(
-            'click',
-            () => {
-
-              dashProject =
-                btn.dataset.key;
-
-              renderDashboard();
-
-            }
-          );
-
+            return;
         }
-      );
 
-  }
+        input.value = "";
+
+        await loadProjects();
+
+        renderAll();
+
+    } catch (error) {
+
+        console.error(error);
+    }
+}
 
 
-  function renderDashboard(){
+// ================= DASHBOARD =================
 
-    renderProjectChips();
-
+function renderDashboard() {
 
     const scoped =
-      dashProject
-      ?
-      records.filter(
-        r =>
-        r.project ===
         dashProject
-      )
-      :
-      records;
+            ? records.filter(
+                record =>
+                    record.project ===
+                    dashProject
+            )
+            : records;
 
+    const demand =
+        scoped.reduce(
+            (sum, record) =>
+                sum + record.demand,
+            0
+        );
 
-    const totalDemand =
-      scoped.reduce(
-        (s,r) =>
-        s +
-        (Number(r.demand) || 0),
-        0
-      );
+    const received =
+        scoped.reduce(
+            (sum, record) =>
+                sum + record.received,
+            0
+        );
 
+    const cost =
+        scoped.reduce(
+            (sum, record) =>
+                sum +
+                (
+                    record.rate *
+                    record.received
+                ),
+            0
+        );
 
-    const totalReceived =
-      scoped.reduce(
-        (s,r) =>
-        s +
-        (Number(r.received) || 0),
-        0
-      );
-
-
-    const totalCost =
-      scoped.reduce(
-        (s,r) =>
-        s +
-        computeCost(r),
-        0
-      );
-
-
-    document.getElementById(
-      'statDemand'
-    ).textContent =
-      num(totalDemand);
-
-
-    document.getElementById(
-      'statReceived'
-    ).textContent =
-      num(totalReceived);
-
-
-    document.getElementById(
-      'statCost'
-    ).textContent =
-      money(totalCost);
-
-
-    /* ================= GROUP ITEMS ================= */
-
-    const groups = {};
-
-
-    scoped.forEach(r => {
-
-      const key =
-        r.item +
-        '||' +
-        r.grade;
-
-
-      if(!groups[key]){
-
-        groups[key] = {
-
-          item:r.item,
-
-          grade:r.grade,
-
-          unit:r.unit,
-
-          demand:0,
-
-          received:0,
-
-          cost:0
-
-        };
-
-      }
-
-
-      const g =
-        groups[key];
-
-
-      g.demand +=
-        Number(r.demand) || 0;
-
-
-      g.received +=
-        Number(r.received) || 0;
-
-
-      g.cost +=
-        computeCost(r);
-
-    });
-
-
-    const rows =
-      Object
-      .values(groups)
-      .sort(
-        (a,b) =>
-        a.item.localeCompare(
-          b.item
+    document
+        .getElementById(
+            "statDemand"
         )
-      );
+        .textContent =
+            num(demand);
 
+    document
+        .getElementById(
+            "statReceived"
+        )
+        .textContent =
+            num(received);
+
+    document
+        .getElementById(
+            "statCost"
+        )
+        .textContent =
+            money(cost);
+
+    renderDashboardTable(
+        scoped
+    );
+}
+
+
+function renderDashboardTable(rows) {
 
     const body =
-      document.getElementById(
-        'dashBody'
-      );
+        document.getElementById(
+            "dashBody"
+        );
 
-
-    document.getElementById(
-      'dashEmpty'
-    ).style.display =
-      rows.length
-      ?
-      'none'
-      :
-      'block';
-
+    if (!body) return;
 
     body.innerHTML =
-      rows
-      .map(
-        g =>
-        `
-          <tr>
+        rows.map(
+            record => `
+                <tr>
 
-            <td>
-              ${escapeHtml(g.item)}
-            </td>
+                    <td>
+                        ${escapeHtml(record.item)}
+                    </td>
 
-            <td>
-              ${escapeHtml(g.grade)}
-            </td>
+                    <td>
+                        ${escapeHtml(record.grade)}
+                    </td>
 
-            <td>
-              ${escapeHtml(g.unit)}
-            </td>
+                    <td>
+                        ${escapeHtml(record.unit)}
+                    </td>
 
-            <td class="num">
-              ${num(g.demand)}
-            </td>
+                    <td class="num">
+                        ${num(record.demand)}
+                    </td>
 
-            <td class="num">
-              ${num(g.received)}
-            </td>
+                    <td class="num">
+                        ${num(record.received)}
+                    </td>
 
-            <td class="num">
-              ${money(g.cost)}
-            </td>
+                    <td class="num">
+                        ${money(
+                            record.rate *
+                            record.received
+                        )}
+                    </td>
 
-          </tr>
-        `
-      )
-      .join('');
+                </tr>
+            `
+        )
+        .join("");
+}
 
-  }
+
+// ================= CHECKOUT HISTORY =================
+
+function renderCheckouts() {
+
+    const body =
+        document.getElementById(
+            "checkoutBody"
+        );
+
+    if (!body) return;
+
+    body.innerHTML =
+        checkouts.map(
+            checkout => `
+                <tr>
+
+                    <td>
+                        ${escapeHtml(checkout.project)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(checkout.item)}
+                    </td>
+
+                    <td>
+                        ${num(checkout.quantity)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            checkout.checked_out_to
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            checkout.purpose
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            checkout.checked_out_by
+                        )}
+                    </td>
+
+                    <td>
+                        ${
+                            checkout.checkout_date
+                                ? new Date(
+                                    checkout.checkout_date
+                                )
+                                    .toLocaleString()
+                                : ""
+                        }
+                    </td>
+
+                </tr>
+            `
+        )
+        .join("");
+}
 
 
-  /* ================= RENDER ALL ================= */
+// ================= EXPORT CSV =================
 
-  function renderAll(){
+function exportCSV() {
+
+    const rows =
+        filteredLedgerRecords();
+
+    let csv =
+        "Project,Item,Grade,PO Reference,Unit,Rate,Demand,Received,Available,Remarks\n";
+
+    rows.forEach(
+        record => {
+
+            csv += [
+                record.project,
+                record.item,
+                record.grade,
+                record.po_reference,
+                record.unit,
+                record.rate,
+                record.demand,
+                record.received,
+                availableQuantity(record),
+                record.remarks
+            ]
+                .map(
+                    value =>
+                        `"${String(value ?? "").replace(/"/g, '""')}"`
+                )
+                .join(",");
+
+            csv += "\n";
+        }
+    );
+
+    const blob =
+        new Blob(
+            [csv],
+            {
+                type:
+                    "text/csv"
+            }
+        );
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+    const link =
+        document.createElement(
+            "a"
+        );
+
+    link.href = url;
+
+    link.download =
+        "inventory.csv";
+
+    link.click();
+
+    URL.revokeObjectURL(
+        url
+    );
+}
+
+
+// ================= TABS =================
+
+function switchTab(tab) {
+
+    activeTab = tab;
+
+    document
+        .querySelectorAll(
+            ".tabbar button"
+        )
+        .forEach(
+            button => {
+
+                button.classList.toggle(
+                    "active",
+
+                    button.dataset.tab ===
+                    tab
+                );
+            }
+        );
+
+    document
+        .getElementById(
+            "tab-ledger"
+        )
+        .style.display =
+            tab === "ledger"
+                ? "block"
+                : "none";
+
+    document
+        .getElementById(
+            "tab-dashboard"
+        )
+        .style.display =
+            tab === "dashboard"
+                ? "block"
+                : "none";
+
+    document
+        .getElementById(
+            "tab-checkouts"
+        )
+        .style.display =
+            tab === "checkouts"
+                ? "block"
+                : "none";
+}
+
+async function updateInventoryRecord(
+    id,
+    field,
+    value
+) {
+
+    const record =
+        records.find(
+            record =>
+                String(record.id) ===
+                String(id)
+        );
+
+
+    if (!record) return;
+
+
+    const updatedRecord = {
+
+        project:
+            record.project,
+
+        item:
+            record.item,
+
+        grade:
+            record.grade,
+
+        po_reference:
+            record.po_reference,
+
+        unit:
+            record.unit,
+
+        rate:
+            record.rate,
+
+        demand:
+            record.demand,
+
+        received:
+            record.received,
+
+        remarks:
+            record.remarks
+
+    };
+
+
+    updatedRecord[field] =
+        value;
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/inventory/${id}`,
+                {
+
+                    method:
+                        "PUT",
+
+                    headers:
+                        authHeaders(true),
+
+                    body:
+                        JSON.stringify(
+                            updatedRecord
+                        )
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            alert(
+                data.message ||
+                "Failed to update inventory."
+            );
+
+            return;
+
+        }
+
+
+        Object.assign(
+            record,
+            updatedRecord
+        );
+
+
+        await loadRecords();
+
+        renderAll();
+
+
+    } catch (error) {
+
+        console.error(
+            "Update error:",
+            error
+        );
+
+        alert(
+            "Unable to update inventory."
+        );
+
+    }
+
+}
+// ================= RENDER ALL =================
+
+function renderAll() {
 
     renderLedger();
 
     renderDashboard();
 
-  }
+    renderCheckouts();
+}
 
 
-  /* ================= EXPORT CSV ================= */
+// ================= INITIALIZE =================
 
-  function exportCsv(){
+async function init() {
 
-    const header = [
+    try {
 
-      'Project',
+        await loadProjects();
 
-      'Item',
+        await loadRecords();
 
-      'Grade/Size',
+        await loadCheckouts();
 
-      'PO Reference',
+        renderAll();
 
-      'Unit',
+        console.log(
+            "Application loaded successfully."
+        );
 
-      'Rate',
+    } catch (error) {
 
-      'Demand',
-
-      'Received',
-
-      'Cost',
-
-      'Last Updated',
-
-      'Remarks'
-
-    ];
+        console.error(
+            "Initialization error:",
+            error
+        );
+    }
+}
 
 
-    const lines = [
-      header.join(',')
-    ];
+// ================= EVENTS =================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        document
+            .getElementById(
+                "userInfo"
+            )
+            ?.append(
+                `${user.username} (${user.role})`
+            );
 
 
-    records.forEach(r => {
-
-      const row = [
-
-        r.project,
-
-        r.item,
-
-        r.grade,
-
-        r.po,
-
-        r.unit,
-
-        r.rate,
-
-        r.demand,
-
-        r.received,
-
-        computeCost(r),
-
-        r.updated,
-
-        r.remarks
-
-      ]
-      .map(
-        v =>
-        `"${String(v ?? '').replace(/"/g,'""')}"`
-      );
+        document
+            .getElementById(
+                "f-search"
+            )
+            ?.addEventListener(
+                "input",
+                renderLedger
+            );
 
 
-      lines.push(
-        row.join(',')
-      );
+        document
+            .getElementById(
+                "f-project"
+            )
+            ?.addEventListener(
+                "change",
+                renderLedger
+            );
+
+        document
+            .getElementById("addRowBtn")
+            ?.addEventListener("click", function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                console.log("Add Row button clicked");
+
+                // Check permission
+                if (!canManageInventory()) {
+                    alert("You do not have permission to add inventory.");
+                    return;
+                }
+
+                // Open the inventory form
+                openInventoryForm();
+            });
+
+
+        // ================= PERMISSION VISIBILITY =================
+
+        if (!canManageInventory()) {
+
+            const addRowBtn =
+                document.getElementById("addRowBtn");
+
+            const manageProjectsBtn =
+                document.getElementById("manageProjectsBtn");
+
+            if (addRowBtn) {
+                addRowBtn.style.display = "none";
+            }
+
+            if (manageProjectsBtn) {
+                manageProjectsBtn.style.display = "none";
+            }
+
+        } else {
+
+            // Make sure the button is visible for admin/manager
+            const addRowBtn =
+                document.getElementById("addRowBtn");
+
+            if (addRowBtn) {
+                addRowBtn.style.display = "inline-block";
+            }
+        }
+
+
+            document
+    .getElementById("ledgerBody")
+    ?.addEventListener("dblclick", event => {
+
+        if (!canEdit) {
+            return;
+        }
+
+        const cell = event.target.closest("td.editable");
+
+        if (!cell) {
+            return;
+        }
+
+        if (cell.querySelector("input, select")) {
+            return;
+        }
+
+        const row = cell.closest("tr");
+
+        if (!row) {
+            return;
+        }
+
+        const id = row.dataset.id;
+        const field = cell.dataset.field;
+
+        const record = records.find(
+            record =>
+                String(record.id) === String(id)
+        );
+
+        if (!record) {
+            return;
+        }
+
+        const oldValue = record[field] ?? "";
+
+        /*
+         * PROJECT DROPDOWN
+         */
+        if (field === "project") {
+
+            const select = document.createElement("select");
+
+            select.className = "cell-select";
+
+            select.innerHTML = `
+                <option value="">Select Project</option>
+            `;
+
+            projects.forEach(project => {
+
+                const option =
+                    document.createElement("option");
+
+                option.value = project.name;
+                option.textContent = project.name;
+
+                if (project.name === oldValue) {
+                    option.selected = true;
+                }
+
+                select.appendChild(option);
+            });
+
+            cell.innerHTML = "";
+            cell.appendChild(select);
+
+            select.focus();
+
+            let saved = false;
+
+            async function saveProject() {
+
+                if (saved) {
+                    return;
+                }
+
+                saved = true;
+
+                const newValue = select.value.trim();
+
+                if (newValue === String(oldValue)) {
+                    renderLedger();
+                    return;
+                }
+
+                await updateInventoryRecord(
+                    id,
+                    field,
+                    newValue
+                );
+            }
+
+            select.addEventListener(
+                "change",
+                saveProject
+            );
+
+            select.addEventListener(
+                "blur",
+                saveProject
+            );
+
+            return;
+        }
+
+        /*
+         * NUMBER FIELDS
+         */
+        if (
+            field === "rate" ||
+            field === "demand" ||
+            field === "received"
+        ) {
+
+            const input =
+                document.createElement("input");
+
+            input.type = "number";
+            input.className = "cell-input";
+            input.value = oldValue;
+
+            cell.innerHTML = "";
+            cell.appendChild(input);
+
+            input.focus();
+            input.select();
+
+            let saved = false;
+
+            async function saveNumber() {
+
+                if (saved) {
+                    return;
+                }
+
+                saved = true;
+
+                const newValue =
+                    Number(input.value) || 0;
+
+                if (
+                    newValue === Number(oldValue)
+                ) {
+                    renderLedger();
+                    return;
+                }
+
+                await updateInventoryRecord(
+                    id,
+                    field,
+                    newValue
+                );
+            }
+
+            input.addEventListener(
+                "blur",
+                saveNumber,
+                { once: true }
+            );
+
+            input.addEventListener(
+                "keydown",
+                event => {
+
+                    if (event.key === "Enter") {
+                        input.blur();
+                    }
+
+                    if (event.key === "Escape") {
+                        renderLedger();
+                    }
+                }
+            );
+
+            return;
+        }
+
+        /*
+         * NORMAL TEXT FIELDS
+         */
+        const input =
+            document.createElement("input");
+
+        input.type = "text";
+        input.className = "cell-input";
+        input.value = oldValue;
+
+        cell.innerHTML = "";
+        cell.appendChild(input);
+
+        input.focus();
+        input.select();
+
+        let saved = false;
+
+        async function saveValue() {
+
+            if (saved) {
+                return;
+            }
+
+            saved = true;
+
+            const newValue =
+                input.value.trim();
+
+            if (
+                newValue ===
+                String(oldValue)
+            ) {
+                renderLedger();
+                return;
+            }
+
+            await updateInventoryRecord(
+                id,
+                field,
+                newValue
+            );
+        }
+
+        input.addEventListener(
+            "blur",
+            saveValue,
+            { once: true }
+        );
+
+        input.addEventListener(
+            "keydown",
+            event => {
+
+                if (event.key === "Enter") {
+                    input.blur();
+                }
+
+                if (event.key === "Escape") {
+                    renderLedger();
+                }
+            }
+        );
+    });
+        
+
+        document
+            .getElementById(
+                "saveInventoryBtn"
+            )
+            ?.addEventListener(
+                "click",
+                saveInventory
+            );
+
+
+        document
+            .getElementById(
+                "cancelInventoryBtn"
+            )
+            ?.addEventListener(
+                "click",
+                closeInventoryForm
+            );
+
+
+        document
+            .getElementById(
+                "manageProjectsBtn"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .getElementById(
+                            "projectPanel"
+                        )
+                        .style.display =
+                            "block";
+                }
+            );
+
+
+        document
+            .getElementById(
+                "closeProjectsBtn"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .getElementById(
+                            "projectPanel"
+                        )
+                        .style.display =
+                            "none";
+                }
+            );
+
+
+        document
+            .getElementById(
+                "addProjectBtn"
+            )
+            ?.addEventListener(
+                "click",
+                addProject
+            );
+
+
+        document
+            .getElementById(
+                "exportBtn"
+            )
+            ?.addEventListener(
+                "click",
+                exportCSV
+            );
+
+
+       document
+    .getElementById("ledgerBody")
+    ?.addEventListener("click", event => {
+
+        const target =
+            event.target.closest("button");
+
+        if (!target) {
+            return;
+        }
+
+        /*
+         * EDIT
+         */
+        if (target.dataset.edit) {
+
+            event.stopPropagation();
+
+            openInventoryForm(
+                target.dataset.edit
+            );
+
+            return;
+        }
+
+        /*
+         * DELETE
+         */
+        if (target.dataset.delete) {
+
+            event.stopPropagation();
+
+            deleteInventory(
+                target.dataset.delete
+            );
+
+            return;
+        }
+
+        /*
+         * CHECKOUT
+         */
+        if (target.dataset.checkout) {
+
+            event.stopPropagation();
+
+            openCheckout(
+                target.dataset.checkout
+            );
+
+            return;
+        }
 
     });
 
 
-    const blob =
-      new Blob(
-        [
-          lines.join('\n')
-        ],
-        {
-          type:'text/csv'
-        }
-      );
-
-
-    const url =
-      URL.createObjectURL(
-        blob
-      );
-
-
-    const a =
-      document.createElement(
-        'a'
-      );
-
-
-    a.href = url;
-
-    a.download =
-      'site-inventory-export.csv';
-
-
-    document.body.appendChild(a);
-
-    a.click();
-
-    document.body.removeChild(a);
-
-    URL.revokeObjectURL(url);
-
-  }
-
-
-  /* ================= TABS ================= */
-
-  function switchTab(tab){
-
-    activeTab = tab;
-
-
-    document
-      .querySelectorAll(
-        '.tabbar button'
-      )
-      .forEach(
-        b =>
-        b.classList.toggle(
-          'active',
-          b.dataset.tab === tab
-        )
-      );
-
-
-    document.getElementById(
-      'tab-ledger'
-    ).style.display =
-      tab === 'ledger'
-      ?
-      'block'
-      :
-      'none';
-
-
-    document.getElementById(
-      'tab-dashboard'
-    ).style.display =
-      tab === 'dashboard'
-      ?
-      'block'
-      :
-      'none';
-
-
-    if(
-      tab === 'dashboard'
-    )
-      renderDashboard();
-
-  }
-
-
-  /* ================= EVENT LISTENERS ================= */
-
-  document
-    .querySelectorAll(
-      '.tabbar button'
-    )
-    .forEach(
-      b =>
-      b.addEventListener(
-        'click',
-        () =>
-        switchTab(
-          b.dataset.tab
-        )
-      )
-    );
-
-
-  document
-    .getElementById(
-      'addRowBtn'
-    )
-    .addEventListener(
-      'click',
-      addRow
-    );
-
-
-  document
-    .getElementById(
-      'exportBtn'
-    )
-    .addEventListener(
-      'click',
-      exportCsv
-    );
-
-
-  document
-    .getElementById(
-      'manageProjectsBtn'
-    )
-    .addEventListener(
-      'click',
-      openProjectPanel
-    );
-
-
-  document
-    .getElementById(
-      'closeProjectsBtn'
-    )
-    .addEventListener(
-      'click',
-      closeProjectPanel
-    );
-
-
-  document
-    .getElementById(
-      'addProjectBtn'
-    )
-    .addEventListener(
-      'click',
-      () => {
-
-        const input =
-          document.getElementById(
-            'in-newproject'
-          );
-
-
-        addProject(
-          input.value
-        );
-
-
-        input.value = '';
-
-
-        renderManageProjectsPanel();
-
-
-        input.focus();
-
-      }
-    );
-
-
-  document
-    .getElementById(
-      'in-newproject'
-    )
-    .addEventListener(
-      'keydown',
-      e => {
-
-        if(
-          e.key === 'Enter'
-        ){
-
-          e.preventDefault();
-
-          document
+        document
             .getElementById(
-              'addProjectBtn'
+                "confirmCheckoutBtn"
             )
-            .click();
+            ?.addEventListener(
+                "click",
+                confirmCheckout
+            );
 
+
+        document
+            .getElementById(
+                "cancelCheckoutBtn"
+            )
+            ?.addEventListener(
+                "click",
+                closeCheckout
+            );
+
+
+        document
+            .querySelectorAll(
+                ".tabbar button"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () =>
+                            switchTab(
+                                button.dataset.tab
+                            )
+                    );
+                }
+            );
+
+
+        document
+            .getElementById(
+                "logoutBtn"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    localStorage.clear();
+
+                    window.location.href =
+                        "login.html";
+                }
+            );
+
+
+        if (!canManageInventory()) {
+
+            const addRowBtn =
+                document.getElementById("addRowBtn");
+
+            const manageProjectsBtn =
+                document.getElementById("manageProjectsBtn");
+
+            if (addRowBtn) {
+                addRowBtn.style.display = "none";
+            }
+
+            if (manageProjectsBtn) {
+                manageProjectsBtn.style.display = "none";
+            }
         }
 
-      }
-    );
 
-
-  document
-    .getElementById(
-      'f-search'
-    )
-    .addEventListener(
-      'input',
-      renderLedger
-    );
-
-
-  document
-    .getElementById(
-      'f-project'
-    )
-    .addEventListener(
-      'change',
-      renderLedger
-    );
-
-
-  /* ================= INITIALIZE ================= */
-
-  (async function init() {
-
-    await loadProjects();
-
-    await loadRecords();
-
-    renderAll();
-
-})();
-
-})();
-
+        init();
+    }
+);

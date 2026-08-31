@@ -435,11 +435,7 @@ th.num{
   white-space:nowrap;
 }
 
-/* ================= AUTO WIDTH ================= */
 
-const{
-  font-family:Arial, Helvetica, sans-serif;
-}
 
 /* ================= PROJECT CHIPS ================= */
 
@@ -552,7 +548,22 @@ const{
 .table-scroll{
   overflow-x:auto;
 }
+.table-scroll table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
+.table-scroll th {
+  text-align: center;
+    vertical-align: middle;
+    padding: 10px,10px;
+}
+.table-scroll td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 1px 10px; /* top/bottom | left/right */
+
+}
 /* ================= FOOTER ================= */
 
 footer.note{
@@ -585,3 +596,158 @@ footer.note{
 
 }
 
+/* ================= CHECKOUT ================= */
+
+.checkout-btn{
+  background:var(--blueprint) !important;
+  color:#fff !important;
+}
+
+.checkout-panel{
+  position:fixed;
+  inset:0;
+  margin:auto;
+  width:min(650px,90%);
+  height:max-content;
+  background:#fff;
+  border:2px solid var(--ink);
+  border-radius:8px;
+  padding:22px;
+  z-index:1000;
+  display:none;
+  box-shadow:0 10px 40px rgba(0,0,0,.2);
+}
+
+.checkout-panel.open{
+  display:block;
+}
+
+.checkout-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:14px;
+}
+
+.checkout-grid .field{
+  width:100%;
+}
+
+.checkout-grid input,
+.checkout-grid textarea{
+  width:100%;
+}
+
+.checkout-grid textarea{
+  min-height:90px;
+  resize:vertical;
+}
+
+.available-qty{
+  color:var(--ok);
+  font-weight:bold;
+}
+
+.checkout-history h2{
+  font-size:18px;
+  text-transform:uppercase;
+  margin-bottom:16px;
+}
+
+@media(max-width:650px){
+
+  .checkout-grid{
+    grid-template-columns:1fr;
+  }
+
+}
+.editable {
+    cursor: pointer;
+}
+
+.editable:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.inline-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px;
+    border: 1px solid #888;
+    font: inherit;
+}.cell-select {
+    width: 100%;
+    min-width: 150px;
+    padding: 6px 8px;
+    border: 1.3px solid var(--blueprint);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.cell-select:focus {
+    outline: none;
+    border-color: var(--blueprint);
+    box-shadow: 0 0 0 2px var(--blueprint-dim);
+}
+
+.cell-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px;
+    border: 1.3px solid var(--blueprint);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+}
+
+.cell-input:focus {
+    outline: none;
+    border-color: var(--blueprint);
+    box-shadow: 0 0 0 2px var(--blueprint-dim);
+}
+
+.editable {
+    cursor: pointer;
+}
+
+.editable:hover {
+    background: rgba(44, 92, 134, 0.08);
+}
+
+.rowbtns {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.rowbtns button {
+    background: #682b2b;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.rowbtns button.edit {
+    background: var(--blueprint);
+}
+
+.rowbtns button.checkout-btn {
+    background: var(--blueprint);
+}
+
+.rowbtns button.del {
+    background: #8f2828;
+}
+
+.rowbtns button:hover {
+    opacity: 0.85;
+}

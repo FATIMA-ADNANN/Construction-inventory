@@ -1,398 +1,972 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Site Inventory Ledger — Faisal Town Group</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Site Inventory Ledger - Faisal Town Group
+    </title>
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
 </head>
+
 
 <body>
 
 <div class="wrap">
 
-<header class="site">
 
-  <div>
-    <p class="brand-eyebrow">
-      Faisal Town Group · Site Operations
-    </p>
+    <!-- ================= HEADER ================= -->
 
-    <h1>
-      Site Inventory Ledger
-    </h1>
-  </div>
+    <header class="site">
 
-  <div class="stamp" id="recordCountStamp">
-    0 ITEMS ON RECORD
-  </div>
+        <div>
 
-</header>
+            <p class="brand-eyebrow">
+                Faisal Town Group · Site Operations
+            </p>
 
+            <h1>
+                Site Inventory Ledger
+            </h1>
 
-<!-- ================= TABS ================= -->
-
-<div class="tabbar">
-
-  <button class="active" data-tab="ledger">
-    Ledger
-  </button>
-
-  <button data-tab="dashboard">
-    Dashboard
-  </button>
-
-</div>
+        </div>
 
 
-<!-- ========================================================= -->
-<!-- ======================= LEDGER ========================== -->
-<!-- ========================================================= -->
-
-<div class="panel" id="tab-ledger">
-
-  <div class="controls">
-
-    <div class="field">
-
-      <label for="f-search">
-        Search
-      </label>
-
-      <input
-        type="text"
-        id="f-search"
-        placeholder="Item, grade, PO#..."
-        style="min-width:180px;"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label for="f-project">
-        Project
-      </label>
-
-      <select id="f-project">
-        <option value="">
-          All Projects
-        </option>
-      </select>
-
-    </div>
-
-
-    <div class="spacer"></div>
-
-
-    <button class="btn secondary" id="exportBtn">
-      Export CSV
-    </button>
-
-    <button class="btn secondary" id="manageProjectsBtn">
-      + Add Project
-    </button>
-
-    <button class="btn orange" id="addRowBtn">
-      + Add Row
-    </button>
-
-  </div>
-
-
-  <!-- PROJECT PANEL -->
-
-  <div class="form-panel" id="projectPanel">
-
-    <p class="form-title" style="color:var(--rebar);">
-      Manage Projects
-    </p>
-
-    <div class="controls" style="margin-bottom:12px;">
-
-      <div class="field" style="flex:1;min-width:220px;">
-
-        <label for="in-newproject">
-          New project name
-        </label>
-
-        <input
-          type="text"
-          id="in-newproject"
-          placeholder="e.g. Faisal Hills Gate"
+        <div
+            style="
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            "
         >
 
-      </div>
+            <span id="userInfo"></span>
 
-      <button
-        class="btn rebar"
-        id="addProjectBtn"
-        style="align-self:flex-end;"
-      >
-        Add Project
-      </button>
+            <button
+                type="button"
+                class="btn secondary"
+                id="logoutBtn"
+            >
+                Logout
+            </button>
+
+        </div>
+
+
+        <div
+            class="stamp"
+            id="recordCountStamp"
+        >
+            0 ITEMS ON RECORD
+        </div>
+
+    </header>
+
+
+
+    <!-- ================= TABS ================= -->
+
+    <div class="tabbar">
+
+        <button
+            type="button"
+            class="active"
+            data-tab="ledger"
+        >
+            Ledger
+        </button>
+
+
+        <button
+            type="button"
+            data-tab="dashboard"
+        >
+            Dashboard
+        </button>
+
+
+        <button
+            type="button"
+            data-tab="checkouts"
+        >
+            Checkouts
+        </button>
 
     </div>
 
 
-    <div
-      id="projectChipsManage"
-      style="display:flex;gap:8px;flex-wrap:wrap;"
-    ></div>
 
-
-    <div class="form-actions">
-
-      <button class="btn secondary" id="closeProjectsBtn">
-        Close
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <p
-    style="
-      font-family:Arial, Helvetica, sans-serif;
-      font-size:11px;
-      color:var(--steel);
-      margin:0 0 10px;
-    "
-  >
-    Click into any cell to edit it directly — changes save automatically.
-  </p>
-
-
-  <!-- LEDGER TABLE -->
-
-  <div class="table-scroll">
-
-    <table>
-
-      <thead>
-
-        <tr>
-
-          <th>Project</th>
-          <th>Item</th>
-          <th>Grade/Size</th>
-          <th>PO Ref</th>
-          <th>Unit</th>
-
-          <th class="num">
-            Rate
-          </th>
-
-          <th class="num">
-            Demand
-          </th>
-
-          <th class="num">
-            Received
-          </th>
-
-          <th class="num">
-            Cost
-          </th>
-
-          <th>
-            Updated
-          </th>
-
-          <th>
-            Remarks
-          </th>
-
-          <th></th>
-
-        </tr>
-
-      </thead>
-
-      <tbody id="ledgerBody"></tbody>
-
-    </table>
-
+    <!-- ================= LEDGER ================= -->
 
     <div
-      class="empty-state"
-      id="emptyState"
-      style="display:none;"
+        class="panel"
+        id="tab-ledger"
     >
-      No items match your filters. Try clearing search or add a new row.
+
+        <div class="controls">
+
+
+            <!-- SEARCH -->
+
+            <div class="field">
+
+                <label for="f-search">
+                    Search
+                </label>
+
+                <input
+                    type="text"
+                    id="f-search"
+                    placeholder="Item, grade, PO..."
+                    style="min-width:180px;"
+                >
+
+            </div>
+
+
+
+            <!-- PROJECT FILTER -->
+
+            <div class="field">
+
+                <label for="f-project">
+                    Project
+                </label>
+
+                <select id="f-project">
+
+                    <option value="">
+                        All Projects
+                    </option>
+
+                </select>
+
+            </div>
+
+
+
+            <div class="spacer"></div>
+
+
+
+            <!-- EXPORT -->
+
+            <button
+                type="button"
+                class="btn secondary"
+                id="exportBtn"
+            >
+                Export CSV
+            </button>
+
+
+
+            <!-- MANAGE PROJECTS -->
+
+            <button
+                type="button"
+                class="btn secondary"
+                id="manageProjectsBtn"
+            >
+                + Add Project
+            </button>
+
+
+
+            <!-- ADD ROW -->
+
+            <button
+                type="button"
+                id="addRowBtn"
+                class="btn"
+            >
+                + Add Row
+            </button>
+
+        </div>
+
+
+
+        <!-- ================= PROJECT PANEL ================= -->
+
+        <div
+            class="form-panel"
+            id="projectPanel"
+            style="display: none;"
+        >
+
+            <p class="form-title">
+                Manage Projects
+            </p>
+
+
+            <div class="controls">
+
+                <div
+                    class="field"
+                    style="
+                        flex: 1;
+                        min-width: 220px;
+                    "
+                >
+
+                    <label for="in-newproject">
+                        New project name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="in-newproject"
+                        placeholder="e.g. Faisal Hills Gate"
+                    >
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn rebar"
+                    id="addProjectBtn"
+                >
+                    Add Project
+                </button>
+
+            </div>
+
+
+
+            <div
+                id="projectChipsManage"
+                style="
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                "
+            ></div>
+
+
+
+            <div class="form-actions">
+
+                <button
+                    type="button"
+                    class="btn secondary"
+                    id="closeProjectsBtn"
+                >
+                    Close
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <p
+            style="
+                font-size: 11px;
+                color: var(--steel);
+                margin: 0 0 10px;
+            "
+        >
+            Double-click a cell to edit it directly.
+            Changes save automatically.
+        </p>
+
+
+
+        <!-- ================= LEDGER TABLE ================= -->
+
+        <div class="table-scroll">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Project</th>
+                        <th>Item</th>
+                        <th>Grade/Size</th>
+                        <th>PO Ref</th>
+                        <th>Unit</th>
+
+                        <th class="num">
+                            Rate
+                        </th>
+
+                        <th class="num">
+                            Demand
+                        </th>
+
+                        <th class="num">
+                            Received
+                        </th>
+
+                        <th class="num">
+                            Available
+                        </th>
+
+                        <th class="num">
+                            Cost
+                        </th>
+
+                        <th>
+                            Updated
+                        </th>
+
+                        <th>
+                            Remarks
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="ledgerBody"></tbody>
+
+            </table>
+
+
+
+            <div
+                class="empty-state"
+                id="emptyState"
+                style="display: none;"
+            >
+                No items match your filters.
+            </div>
+
+        </div>
+
     </div>
 
-  </div>
-
-</div>
 
 
-<!-- ========================================================= -->
-<!-- ===================== DASHBOARD ========================= -->
-<!-- ========================================================= -->
-
-<div
-  class="panel"
-  id="tab-dashboard"
-  style="display:none;"
->
-
-  <p
-    class="form-title"
-    style="color:var(--steel);margin-bottom:10px;"
-  >
-    Filter by project
-  </p>
-
-
-  <div
-    class="project-chips"
-    id="projectChips"
-  ></div>
-
-
-  <!-- DASHBOARD STAT CARDS -->
-
-  <div class="stat-grid">
-
-    <div class="stat-tile">
-
-      <p class="stat-label">
-        Total Demand
-      </p>
-
-      <p
-        class="stat-value"
-        id="statDemand"
-      >
-        0
-      </p>
-
-      <p class="stat-unit">
-        across selected scope
-      </p>
-
-    </div>
-
-
-    <div class="stat-tile">
-
-      <p class="stat-label">
-        Total Received
-      </p>
-
-      <p
-        class="stat-value"
-        id="statReceived"
-      >
-        0
-      </p>
-
-      <p class="stat-unit">
-        delivered to site
-      </p>
-
-    </div>
-
-
-    <div class="stat-tile cost">
-
-      <p class="stat-label">
-        Project Cost
-      </p>
-
-      <p
-        class="stat-value"
-        id="statCost"
-      >
-        ₨0
-      </p>
-
-      <p class="stat-unit">
-        rate × received
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <!-- DASHBOARD TABLE -->
-
-  <div class="table-scroll">
-
-    <table>
-
-      <thead>
-
-        <tr>
-
-          <th>
-            Item
-          </th>
-
-          <th>
-            Grade/Size
-          </th>
-
-          <th>
-            Unit
-          </th>
-
-          <th class="num">
-            Demand
-          </th>
-
-          <th class="num">
-            Received
-          </th>
-
-          <th class="num">
-            Cost
-          </th>
-
-        </tr>
-
-      </thead>
-
-
-      <tbody id="dashBody"></tbody>
-
-    </table>
-
+    <!-- ================= DASHBOARD ================= -->
 
     <div
-      class="empty-state"
-      id="dashEmpty"
-      style="display:none;"
+        class="panel"
+        id="tab-dashboard"
+        style="display: none;"
     >
-      No records for this project yet.
+
+        <p class="form-title">
+            Filter by project
+        </p>
+
+
+
+        <div
+            class="project-chips"
+            id="projectChips"
+        ></div>
+
+
+
+        <!-- ================= STATISTICS ================= -->
+
+        <div class="stat-grid">
+
+
+            <div class="stat-tile">
+
+                <p class="stat-label">
+                    Total Demand
+                </p>
+
+                <p
+                    class="stat-value"
+                    id="statDemand"
+                >
+                    0
+                </p>
+
+                <p class="stat-unit">
+                    across selected scope
+                </p>
+
+            </div>
+
+
+
+            <div class="stat-tile">
+
+                <p class="stat-label">
+                    Total Received
+                </p>
+
+                <p
+                    class="stat-value"
+                    id="statReceived"
+                >
+                    0
+                </p>
+
+                <p class="stat-unit">
+                    delivered to site
+                </p>
+
+            </div>
+
+
+
+            <div class="stat-tile cost">
+
+                <p class="stat-label">
+                    Project Cost
+                </p>
+
+                <p
+                    class="stat-value"
+                    id="statCost"
+                >
+                    ₨0
+                </p>
+
+                <p class="stat-unit">
+                    rate × received
+                </p>
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- ================= DASHBOARD TABLE ================= -->
+
+        <div class="table-scroll">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Item</th>
+
+                        <th>
+                            Grade/Size
+                        </th>
+
+                        <th>
+                            Unit
+                        </th>
+
+                        <th class="num">
+                            Demand
+                        </th>
+
+                        <th class="num">
+                            Received
+                        </th>
+
+                        <th class="num">
+                            Cost
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="dashBody"></tbody>
+
+            </table>
+
+
+
+            <div
+                class="empty-state"
+                id="dashEmpty"
+                style="display: none;"
+            >
+                No records for this project yet.
+            </div>
+
+        </div>
+
     </div>
 
-  </div>
+
+
+    <!-- ================= CHECKOUT HISTORY ================= -->
+
+    <div
+        class="panel"
+        id="tab-checkouts"
+        style="display: none;"
+    >
+
+        <div class="checkout-history">
+
+            <h2>
+                Checkout History
+            </h2>
+
+
+
+            <div class="table-scroll">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Project
+                            </th>
+
+                            <th>
+                                Item
+                            </th>
+
+                            <th>
+                                Quantity
+                            </th>
+
+                            <th>
+                                Checked Out To
+                            </th>
+
+                            <th>
+                                Purpose
+                            </th>
+
+                            <th>
+                                Checked Out By
+                            </th>
+
+                            <th>
+                                Date
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="checkoutBody"></tbody>
+
+                </table>
+
+
+
+                <div
+                    class="empty-state"
+                    id="checkoutEmpty"
+                    style="display: none;"
+                >
+                    No checkout records yet.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================================= -->
+    <!-- ================= INVENTORY FORM ================= -->
+    <!-- ================================================= -->
+
+    <div
+        id="inventoryPanel"
+        class="form-panel"
+        style="display: none;"
+    >
+
+        <h3
+            id="inventoryFormTitle"
+            class="form-title"
+        >
+            Add Inventory Item
+        </h3>
+
+
+
+        <div class="controls">
+
+
+            <!-- PROJECT -->
+
+            <div class="field">
+
+                <label for="in-project">
+                    Project
+                </label>
+
+                <select id="in-project">
+
+                    <option value="">
+                        Select Project
+                    </option>
+
+                </select>
+
+            </div>
+
+
+
+            <!-- ITEM -->
+
+            <div class="field">
+
+                <label for="in-item">
+                    Item
+                </label>
+
+                <input
+                    type="text"
+                    id="in-item"
+                >
+
+            </div>
+
+
+
+            <!-- GRADE -->
+
+            <div class="field">
+
+                <label for="in-grade">
+                    Grade / Size
+                </label>
+
+                <input
+                    type="text"
+                    id="in-grade"
+                >
+
+            </div>
+
+
+
+            <!-- PO -->
+
+            <div class="field">
+
+                <label for="in-po">
+                    PO Reference
+                </label>
+
+                <input
+                    type="text"
+                    id="in-po"
+                >
+
+            </div>
+
+
+
+            <!-- UNIT -->
+
+            <div class="field">
+
+                <label for="in-unit">
+                    Unit
+                </label>
+
+                <input
+                    type="text"
+                    id="in-unit"
+                >
+
+            </div>
+
+
+
+            <!-- RATE -->
+
+            <div class="field">
+
+                <label for="in-rate">
+                    Rate
+                </label>
+
+                <input
+                    type="number"
+                    id="in-rate"
+                    min="0"
+                >
+
+            </div>
+
+
+
+            <!-- DEMAND -->
+
+            <div class="field">
+
+                <label for="in-demand">
+                    Demand
+                </label>
+
+                <input
+                    type="number"
+                    id="in-demand"
+                    min="0"
+                >
+
+            </div>
+
+
+
+            <!-- RECEIVED -->
+
+            <div class="field">
+
+                <label for="in-received">
+                    Received
+                </label>
+
+                <input
+                    type="number"
+                    id="in-received"
+                    min="0"
+                >
+
+            </div>
+
+
+
+            <!-- REMARKS -->
+
+            <div class="field">
+
+                <label for="in-remarks">
+                    Remarks
+                </label>
+
+                <textarea
+                    id="in-remarks"
+                ></textarea>
+
+            </div>
+
+
+        </div>
+
+
+
+        <div class="form-actions">
+
+            <button
+                type="button"
+                id="saveInventoryBtn"
+                class="btn"
+            >
+                Save
+            </button>
+
+
+            <button
+                type="button"
+                id="cancelInventoryBtn"
+                class="btn secondary"
+            >
+                Cancel
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================================= -->
+    <!-- ================= CHECKOUT MODAL ================= -->
+    <!-- ================================================= -->
+
+    <div
+        class="checkout-panel"
+        id="checkoutPanel"
+    >
+
+        <p class="form-title">
+            Checkout Inventory
+        </p>
+
+
+
+        <div class="checkout-grid">
+
+
+            <!-- ITEM -->
+
+            <div class="field">
+
+                <label>
+                    Item
+                </label>
+
+                <input
+                    type="text"
+                    id="checkoutItem"
+                    readonly
+                >
+
+            </div>
+
+
+
+            <!-- AVAILABLE -->
+
+            <div class="field">
+
+                <label>
+                    Available Quantity
+                </label>
+
+                <input
+                    type="text"
+                    id="checkoutAvailable"
+                    readonly
+                >
+
+            </div>
+
+
+
+            <!-- QUANTITY -->
+
+            <div class="field">
+
+                <label>
+                    Quantity
+                </label>
+
+                <input
+                    type="number"
+                    id="checkoutQuantity"
+                    min="0.01"
+                    step="0.01"
+                >
+
+            </div>
+
+
+
+            <!-- CHECKED OUT TO -->
+
+            <div class="field">
+
+                <label>
+                    Checked Out To
+                </label>
+
+                <input
+                    type="text"
+                    id="checkoutTo"
+                    placeholder="Person, department or site"
+                >
+
+            </div>
+
+
+
+            <!-- PURPOSE -->
+
+            <div
+                class="field"
+                style="grid-column: 1 / -1;"
+            >
+
+                <label>
+                    Purpose
+                </label>
+
+                <textarea
+                    id="checkoutPurpose"
+                    placeholder="Reason for checkout"
+                ></textarea>
+
+            </div>
+
+
+        </div>
+
+
+
+        <div class="form-actions">
+
+            <button
+                type="button"
+                class="btn"
+                id="confirmCheckoutBtn"
+            >
+                Confirm Checkout
+            </button>
+
+
+            <button
+                type="button"
+                class="btn secondary"
+                id="cancelCheckoutBtn"
+            >
+                Cancel
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer class="note">
+
+        Inventory data is stored securely in the database.
+
+        Available Quantity = Received − Checked Out.
+
+        Cost = Rate × Received.
+
+    </footer>
+
 
 </div>
 
 
-<footer class="note">
 
-  Data is stored per-browser via persistent app storage.
-  Cost = Rate × Received.
-
-</footer>
-
-</div>
-
-
+<!-- ================= JAVASCRIPT ================= -->
 
 <script src="script.js"></script>
 
+
 </body>
+
 </html>

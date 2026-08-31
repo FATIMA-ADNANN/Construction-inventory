@@ -1,76 +1,164 @@
-const loginForm = document.getElementById("loginForm");
-const loginMessage = document.getElementById("loginMessage");
+const API_URL =
+    "http://localhost:5000/api";
 
-loginForm.addEventListener("submit", async function (event) {
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-```
-event.preventDefault();
+        const loginForm =
+            document.getElementById(
+                "loginForm"
+            );
 
-const username =
-    document.getElementById("username").value.trim();
+        const loginMessage =
+            document.getElementById(
+                "loginMessage"
+            );
 
-const password =
-    document.getElementById("password").value;
+        if (!loginForm) {
 
-loginMessage.textContent = "Logging in...";
+            console.error(
+                "loginForm was not found."
+            );
 
-try {
-
-    const response = await fetch(
-        "http://localhost:5000/api/login",
-        {
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                username: username,
-                password: password
-            })
+            return;
         }
-    );
 
-    const data = await response.json();
+        loginForm.addEventListener(
+            "submit",
 
-    console.log("Login response:", data);
+            async function (event) {
 
-    if (data.success) {
+                event.preventDefault();
 
-        // Save JWT token
-        localStorage.setItem(
-            "token",
-            data.token
+                const username =
+                    document
+                        .getElementById(
+                            "username"
+                        )
+                        .value
+                        .trim();
+
+                const password =
+                    document
+                        .getElementById(
+                            "password"
+                        )
+                        .value;
+
+                if (
+                    !username ||
+                    !password
+                ) {
+
+                    loginMessage.textContent =
+                        "Please enter username and password.";
+
+                    return;
+                }
+
+                loginMessage.style.color =
+                    "#333";
+
+                loginMessage.textContent =
+                    "Logging in...";
+
+                try {
+
+                    const response =
+                        await fetch(
+                            `${API_URL}/login`,
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body:
+                                    JSON.stringify({
+                                        username,
+                                        password
+                                    })
+                            }
+                        );
+
+                    const data =
+                        await response.json();
+
+                    console.log(
+                        "Login response:",
+                        data
+                    );
+
+                    if (
+                        response.ok &&
+                        data.success
+                    ) {
+
+                        localStorage.setItem(
+                            "token",
+                            data.token
+                        );
+
+                        localStorage.setItem(
+                            "user",
+                            JSON.stringify(
+                                data.user
+                            )
+                        );
+
+                        localStorage.setItem(
+                            "username",
+                            data.user.username
+                        );
+
+                        localStorage.setItem(
+                            "role",
+                            data.user.role
+                        );
+
+                        loginMessage.style.color =
+                            "green";
+
+                        loginMessage.textContent =
+                            "Login successful. Redirecting...";
+
+                        setTimeout(
+                            () => {
+
+                                window.location.href =
+                                    "index.html";
+
+                            },
+                            500
+                        );
+
+                    } else {
+
+                        loginMessage.style.color =
+                            "#d32f2f";
+
+                        loginMessage.textContent =
+                            data.message ||
+                            "Invalid username or password.";
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        "LOGIN ERROR:",
+                        error
+                    );
+
+                    loginMessage.style.color =
+                        "#d32f2f";
+
+                    loginMessage.textContent =
+                        "Cannot connect to backend server.";
+                }
+            }
         );
-
-        // Save user information
-        localStorage.setItem(
-            "username",
-            data.user.username
-        );
-
-        localStorage.setItem(
-            "role",
-            data.user.role
-        );
-
-        // Go to dashboard
-        window.location.href = "dashboard.html";
-
-    } else {
-
-        loginMessage.textContent =
-            data.message || "Login failed.";
     }
-
-} catch (error) {
-
-    console.error("LOGIN ERROR:", error);
-
-    loginMessage.textContent =
-        "Cannot connect to backend server.";
-}
-```
-
-});
+);
