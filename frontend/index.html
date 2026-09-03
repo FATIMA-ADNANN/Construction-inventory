@@ -75,12 +75,6 @@
         </div>
 
 
-        <div
-            class="stamp"
-            id="recordCountStamp"
-        >
-            0 ITEMS ON RECORD
-        </div>
 
     </header>
 
@@ -114,6 +108,22 @@
             Checkouts
         </button>
 
+        <button
+            type="button"
+            data-tab="audit"
+            id="auditTabBtn"
+            style="display: none;"
+        >
+            Audit Trail
+        </button>
+        <button
+            type="button"
+            data-tab="users"
+            id="usersTabBtn"
+            style="display: none;"
+        >
+            Users
+        </button>
     </div>
 
 
@@ -169,7 +179,21 @@
 
             <div class="spacer"></div>
 
+            <!--IMPORT-->
+            <input
+    type="file"
+    id="csvFileInput"
+    accept=".csv,.xlsx"
+    style="display: none;"
+        >
 
+        <button
+            type="button"
+            class="btn secondary"
+            id="importBtn"
+        >
+            Import CSV
+        </button>
 
             <!-- EXPORT -->
 
@@ -342,6 +366,10 @@
                         </th>
 
                         <th>
+                            Attachments
+                        </th>
+
+                        <th>
                             Actions
                         </th>
 
@@ -365,158 +393,240 @@
             </div>
 
         </div>
+        <div class="ledger-bottom-actions">
+
+            <button
+                type="button"
+                id="bottomAddRowBtn"
+                class="btn"
+            >
+                + Add Row
+            </button>
+
+        </div>
+    </div>
+
+
+  <!-- ================= DASHBOARD ================= -->
+
+<div
+    class="panel"
+    id="tab-dashboard"
+    style="display: none;"
+>
+
+    <!-- PROJECT FILTER -->
+
+    <div class="dashboard-filter">
+
+        <label for="dashboard-project">
+            Filter by Project:
+        </label>
+
+        <select id="dashboard-project">
+
+            <option value="">
+                All Projects
+            </option>
+
+        </select>
 
     </div>
 
 
+    <!-- ================= STATISTICS ================= -->
 
-    <!-- ================= DASHBOARD ================= -->
+    <div class="stat-grid">
 
-    <div
-        class="panel"
-        id="tab-dashboard"
-        style="display: none;"
-    >
+        <!-- TOTAL DEMAND -->
 
-        <p class="form-title">
-            Filter by project
-        </p>
+        <div class="stat-tile">
 
+            <p class="stat-label">
+                Total Demand
+            </p>
+
+            <p
+                class="stat-value"
+                id="statDemand"
+            >
+                0
+            </p>
+
+            <p class="stat-unit">
+                across selected scope
+            </p>
+
+        </div>
+
+
+        <!-- TOTAL RECEIVED -->
+
+        <div class="stat-tile">
+
+            <p class="stat-label">
+                Total Received
+            </p>
+
+            <p
+                class="stat-value"
+                id="statReceived"
+            >
+                0
+            </p>
+
+            <p class="stat-unit">
+                delivered to site
+            </p>
+
+        </div>
+
+
+        <!-- AVAILABLE -->
+
+        <div class="stat-tile">
+
+            <p class="stat-label">
+                Available
+            </p>
+
+            <p
+                class="stat-value"
+                id="statAvailable"
+            >
+                0
+            </p>
+
+            <p class="stat-unit">
+                currently available
+            </p>
+
+        </div>
+
+
+        <!-- CHECKED OUT -->
+
+        <div class="stat-tile">
+
+            <p class="stat-label">
+                Checked Out
+            </p>
+
+            <p
+                class="stat-value"
+                id="statCheckedOut"
+            >
+                0
+            </p>
+
+            <p class="stat-unit">
+                issued from inventory
+            </p>
+
+        </div>
+
+
+        <!-- COMPLETION -->
+
+        <div class="stat-tile">
+
+            <p class="stat-label">
+                Completion
+            </p>
+
+            <p
+                class="stat-value"
+                id="statCompletion"
+            >
+                0%
+            </p>
+
+            <p class="stat-unit">
+                received against demand
+            </p>
+
+        </div>
+
+
+        <!-- PROJECT COST -->
+
+        <div class="stat-tile cost">
+
+            <p class="stat-label">
+                Project Cost
+            </p>
+
+            <p
+                class="stat-value"
+                id="statCost"
+            >
+                ₨0
+            </p>
+
+            <p class="stat-unit">
+                rate × received
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= DASHBOARD TABLE ================= -->
+
+    <div class="table-scroll">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Project</th>
+
+                    <th>Item</th>
+
+                    <th>
+                        Grade/Size
+                    </th>
+
+                    <th>
+                        Unit
+                    </th>
+
+                    <th class="num">
+                        Demand
+                    </th>
+
+                    <th class="num">
+                        Received
+                    </th>
+
+                    <th class="num">
+                        Cost
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="dashBody"></tbody>
+
+        </table>
 
 
         <div
-            class="project-chips"
-            id="projectChips"
-        ></div>
-
-
-
-        <!-- ================= STATISTICS ================= -->
-
-        <div class="stat-grid">
-
-
-            <div class="stat-tile">
-
-                <p class="stat-label">
-                    Total Demand
-                </p>
-
-                <p
-                    class="stat-value"
-                    id="statDemand"
-                >
-                    0
-                </p>
-
-                <p class="stat-unit">
-                    across selected scope
-                </p>
-
-            </div>
-
-
-
-            <div class="stat-tile">
-
-                <p class="stat-label">
-                    Total Received
-                </p>
-
-                <p
-                    class="stat-value"
-                    id="statReceived"
-                >
-                    0
-                </p>
-
-                <p class="stat-unit">
-                    delivered to site
-                </p>
-
-            </div>
-
-
-
-            <div class="stat-tile cost">
-
-                <p class="stat-label">
-                    Project Cost
-                </p>
-
-                <p
-                    class="stat-value"
-                    id="statCost"
-                >
-                    ₨0
-                </p>
-
-                <p class="stat-unit">
-                    rate × received
-                </p>
-
-            </div>
-
-
-        </div>
-
-
-
-        <!-- ================= DASHBOARD TABLE ================= -->
-
-        <div class="table-scroll">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>Item</th>
-
-                        <th>
-                            Grade/Size
-                        </th>
-
-                        <th>
-                            Unit
-                        </th>
-
-                        <th class="num">
-                            Demand
-                        </th>
-
-                        <th class="num">
-                            Received
-                        </th>
-
-                        <th class="num">
-                            Cost
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody id="dashBody"></tbody>
-
-            </table>
-
-
-
-            <div
-                class="empty-state"
-                id="dashEmpty"
-                style="display: none;"
-            >
-                No records for this project yet.
-            </div>
-
+            class="empty-state"
+            id="dashEmpty"
+            style="display: none;"
+        >
+            No records for this project yet.
         </div>
 
     </div>
 
+</div>
 
 
     <!-- ================= CHECKOUT HISTORY ================= -->
@@ -942,8 +1052,315 @@
         </div>
 
     </div>
+    <!-- ================= AUDIT TRAIL ================= -->
+
+<div
+    class="panel"
+    id="tab-audit"
+    style="display: none;"
+>
+
+    <div class="audit-header">
+
+        <h2>
+            Audit Trail
+        </h2>
+
+        <p>
+            Administrative history of system activity.
+        </p>
+
+    </div>
 
 
+    <div class="table-scroll">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        User
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                    <th>
+                        Item
+                    </th>
+
+                    <th>
+                        Changes
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="auditBody"></tbody>
+
+        </table>
+
+
+        <div
+            id="auditEmpty"
+            class="empty-state"
+            style="display: none;"
+        >
+            No audit records yet.
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= USER MANAGEMENT ================= -->
+
+<div
+    class="panel"
+    id="tab-users"
+    style="display: none;"
+>
+
+    <div class="user-management-header">
+
+        <div>
+
+            <h2>
+                User Management
+            </h2>
+
+            <p>
+                Create users and manage roles and account access.
+            </p>
+
+        </div>
+
+        <button
+            type="button"
+            class="btn"
+            id="showAddUserBtn"
+        >
+            + Add User
+        </button>
+
+    </div>
+
+
+    <!-- ================= ADD USER ================= -->
+
+    <div
+        class="user-form"
+        id="addUserPanel"
+        style="display: none;"
+    >
+
+        <h3>
+            Add New User
+        </h3>
+
+
+        <div class="user-form-grid">
+
+            <div class="field">
+
+                <label>
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="newUsername"
+                    placeholder="e.g. fatima"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Email
+                </label>
+
+                <input
+                    type="text"
+                    id="newUserEmail"
+                    placeholder="fatima@company.com"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="newUserPassword"
+                    placeholder="Minimum 6 characters"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Role / Group
+                </label>
+
+                <select id="newUserRole">
+
+                    <option value="engineer">
+                        Engineer
+                    </option>
+
+                    <option value="manager">
+                        Manager
+                    </option>
+
+                    <option value="viewer">
+                        Viewer
+                    </option>
+
+                    <option value="admin">
+                        Admin
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <button
+                type="button"
+                class="btn"
+                id="createUserBtn"
+            >
+                Create User
+            </button>
+
+
+            <button
+                type="button"
+                class="btn secondary"
+                id="cancelAddUserBtn"
+            >
+                Cancel
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= FILTER ================= -->
+
+    <div class="user-filter">
+
+        <label>
+            Group
+        </label>
+
+        <select id="userRoleFilter">
+
+            <option value="">
+                All Users
+            </option>
+
+            <option value="admin">
+                Admin
+            </option>
+
+            <option value="manager">
+                Manager
+            </option>
+
+            <option value="engineer">
+                Engineer
+            </option>
+
+            <option value="viewer">
+                Viewer
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <!-- ================= USERS TABLE ================= -->
+
+    <div class="table-scroll">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Username
+                    </th>
+
+                    <th>
+                        Email
+                    </th>
+
+                    <th>
+                        Group / Role
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Created
+                    </th>
+
+                    <th>
+                        Actions
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="usersBody"></tbody>
+
+        </table>
+
+
+        <div
+            id="usersEmpty"
+            class="empty-state"
+            style="display: none;"
+        >
+            No users found.
+        </div>
+
+    </div>
+
+</div>
 
     <!-- ================= FOOTER ================= -->
 
@@ -962,10 +1379,57 @@
 
 
 
+<!-- ================= ATTACHMENT INPUT ================= -->
+
+<input
+    type="file"
+    id="attachmentInput"
+    accept=".jpg,.jpeg,.png,.webp,.pdf"
+    style="display: none;"
+>
+
+<div
+    id="selectedAttachmentInfo"
+    style="
+        display: none;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        background: #fff;
+    "
+>
+    <span id="selectedAttachmentName"></span>
+</div>
+<div
+    id="attachmentViewer"
+    class="attachment-viewer"
+>
+    <div class="attachment-viewer-box">
+
+        <div class="attachment-viewer-header">
+
+            <h3>Attachments</h3>
+
+            <button
+                type="button"
+                id="closeAttachmentViewer"
+                class="attachment-close-btn"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div id="attachmentList"></div>
+
+    </div>
+</div>
+
 <!-- ================= JAVASCRIPT ================= -->
 
-<script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
+<script src="script.js"></script>
 
 </body>
 
