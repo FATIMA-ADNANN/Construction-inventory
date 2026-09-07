@@ -117,21 +117,35 @@ async function handleApiResponse(response) {
 
         const data =
             await response
+                .clone()
                 .json()
                 .catch(() => null);
 
-        if (response.status === 401) {
+        const message =
+            data?.message ||
+            "Access denied";
+
+        const sessionProblem =
+            response.status === 401 ||
+            (
+                response.status === 403 &&
+                /token|expired|authentication|unauthorized/i
+                    .test(message)
+            );
+
+        if (sessionProblem) {
 
             localStorage.clear();
+
+            alert(
+                "Your session has expired. Please log in again."
+            );
 
             window.location.href =
                 "login.html";
         }
 
-        throw new Error(
-            data?.message ||
-            "Access denied"
-        );
+        throw new Error(message);
     }
 
     return response;
@@ -463,6 +477,11 @@ async function createUser() {
             );
 
 
+                await handleApiResponse(
+            response
+        );
+
+
         const data =
             await response
                 .json()
@@ -524,6 +543,7 @@ async function createUser() {
         );
 
         alert(
+            error.message ||
             "Unable to create user."
         );
     }
@@ -795,151 +815,194 @@ async function loadAuditLogs() {
 }
 
 
-function formatAuditChanges(changes) {
+function formatAuditAction(log) {
 
-    if (!changes) {
-        return "";
-    }
+    const action =
+        String(log.action || "");
 
-    if (
-        typeof changes ===
-        "string"
-    ) {
+    const changes =
+        typeof log.changes === "string"
+            ? (() => {
+                try {
+                    return JSON.parse(log.changes);
+                } catch {
+                    return {};
+                }
+            })()
+            : (log.changes || {});
 
-        try {
 
-            changes =
-                JSON.parse(changes);
+    switch (action) {
 
-        } catch {
+        case "USER_CREATE":
+
+            return `
+                Created user
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+
+                as
+
+                <strong>
+                    ${escapeHtml(changes.role || "")}
+                </strong>
+            `;
+
+
+        case "USER_ENABLED":
+
+            return `
+                Enabled user
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+            `;
+
+
+        case "USER_DISABLED":
+
+            return `
+                Disabled user
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+            `;
+
+
+        case "USER_ROLE_CHANGE":
+
+            return `
+                Changed
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+
+                from
+
+                <strong>
+                    ${escapeHtml(
+                        changes.role?.old || ""
+                    )}
+                </strong>
+
+                to
+
+                <strong>
+                    ${escapeHtml(
+                        changes.role?.new || ""
+                    )}
+                </strong>
+            `;
+
+
+        case "USER_PASSWORD_RESET":
+
+            return `
+                Reset password for
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+            `;
+
+
+        case "CHECKOUT":
+
+            return `
+                Issued
+                <strong>
+                    ${escapeHtml(
+                        changes.quantity || ""
+                    )}
+                </strong>
+
+                of
+
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+
+                to
+
+                <strong>
+                    ${escapeHtml(
+                        changes.checked_out_to || ""
+                    )}
+                </strong>
+            `;
+
+
+        case "ATTACHMENT_UPLOAD":
+
+            return `
+                Uploaded
+                <strong>
+                    ${escapeHtml(
+                        changes.file_name || "a file"
+                    )}
+                </strong>
+
+                to
+
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+            `;
+
+
+        case "CSV_IMPORT":
+
+            return `
+                Imported
+                <strong>
+                    ${escapeHtml(
+                        changes.imported_rows || 0
+                    )}
+                </strong>
+
+                inventory rows
+            `;
+
+
+        case "CREATE":
+
+            return `
+                Added inventory item
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+            `;
+
+
+        case "UPDATE":
+
+            return `
+                Updated inventory item
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+            `;
+
+
+        case "DELETE":
+
+            return `
+                Deleted inventory item
+                <strong>
+                    ${escapeHtml(log.entity_name)}
+                </strong>
+            `;
+
+
+        default:
 
             return escapeHtml(
-                changes
+                action
+                    .replaceAll("_", " ")
+                    .toLowerCase()
             );
-        }
     }
-
-
-    const labels = {
-
-        project:
-            "Project",
-
-        item:
-            "Item",
-
-        grade:
-            "Grade / Size",
-
-        po_reference:
-            "PO Reference",
-
-        unit:
-            "Unit",
-
-        rate:
-            "Rate",
-
-        demand:
-            "Demand",
-
-        received:
-            "Received",
-
-        remarks:
-            "Remarks",
-
-        quantity:
-            "Quantity",
-
-        checked_out_to:
-            "Issued To",
-
-        purpose:
-            "Purpose",
-
-        file_name:
-            "File",
-
-        file_path:
-            "File Path",
-
-        imported_rows:
-            "Imported Rows"
-    };
-
-
-    return Object
-        .entries(changes)
-        .map(
-            ([field, value]) => {
-
-                const label =
-                    labels[field] ||
-                    field;
-
-
-                if (
-                    value &&
-                    typeof value ===
-                    "object" &&
-                    "old" in value &&
-                    "new" in value
-                ) {
-
-                    return `
-                        <div class="audit-change">
-
-                            <strong>
-                                ${escapeHtml(label)}
-                            </strong>
-
-                            <span class="audit-old">
-                                ${escapeHtml(
-                                    value.old
-                                )}
-                            </span>
-
-                            →
-
-                            <span class="audit-new">
-                                ${escapeHtml(
-                                    value.new
-                                )}
-                            </span>
-
-                        </div>
-                    `;
-                }
-
-
-                if (
-                    field ===
-                    "file_path"
-                ) {
-
-                    return "";
-                }
-
-
-                return `
-                    <div class="audit-change">
-
-                        <strong>
-                            ${escapeHtml(label)}:
-                        </strong>
-
-                        <span>
-                            ${escapeHtml(value)}
-                        </span>
-
-                    </div>
-                `;
-            }
-        )
-        .join("");
 }
-
 
 function renderAuditLogs() {
 
@@ -954,6 +1017,7 @@ function renderAuditLogs() {
         document.getElementById(
             "auditBody"
         );
+
 
     const empty =
         document.getElementById(
@@ -990,53 +1054,23 @@ function renderAuditLogs() {
                         </strong>
 
                         <div class="audit-role">
-
                             ${escapeHtml(
                                 log.role
                             )}
-
                         </div>
 
                     </td>
 
 
-                    <td>
+                    <td colspan="2">
 
-                        <span
-                            class="
-                                audit-action
-                                audit-${
-                                    String(
-                                        log.action
-                                    ).toLowerCase()
-                                }
-                            "
-                        >
+                        <div class="audit-description">
 
-                            ${escapeHtml(
-                                log.action
+                            ${formatAuditAction(
+                                log
                             )}
 
-                        </span>
-
-                    </td>
-
-
-                    <td>
-
-                        ${escapeHtml(
-                            log.entity_name ||
-                            ""
-                        )}
-
-                    </td>
-
-
-                    <td>
-
-                        ${formatAuditChanges(
-                            log.changes
-                        )}
+                        </div>
 
                     </td>
 
@@ -1047,7 +1081,16 @@ function renderAuditLogs() {
                             log.created_at
                                 ? new Date(
                                     log.created_at
-                                ).toLocaleString()
+                                ).toLocaleString(
+                                    "en-GB",
+                                    {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                    }
+                                )
                                 : ""
                         }
 
@@ -4259,14 +4302,48 @@ document.addEventListener(
 
         // ================= SEARCH =================
 
-        document
-            .getElementById(
+        const inventorySearch =
+            document.getElementById(
                 "f-search"
-            )
-            ?.addEventListener(
-                "input",
-                renderLedger
             );
+
+        if (inventorySearch) {
+
+            inventorySearch.value = "";
+            inventorySearch.dataset.userTyped = "0";
+
+            inventorySearch.addEventListener(
+                "input",
+                () => {
+
+                    inventorySearch.dataset.userTyped =
+                        "1";
+
+                    renderLedger();
+                }
+            );
+
+            /*
+             * Some browsers/password managers autofill
+             * a saved username after the page has loaded.
+             * Clear it only if the user has not typed.
+             */
+            setTimeout(
+                () => {
+
+                    if (
+                        inventorySearch.dataset.userTyped === "0" &&
+                        inventorySearch.value
+                    ) {
+
+                        inventorySearch.value = "";
+
+                        renderLedger();
+                    }
+                },
+                350
+            );
+        }
 
 
         document
@@ -5466,6 +5543,28 @@ document.addEventListener(
                         "login.html";
                 }
             );
+
+
+        // ================= BROWSER RESTORE SAFETY =================
+
+        window.addEventListener(
+            "pageshow",
+            () => {
+
+                const search =
+                    document.getElementById(
+                        "f-search"
+                    );
+
+                if (
+                    search &&
+                    search.dataset.userTyped !== "1"
+                ) {
+
+                    search.value = "";
+                }
+            }
+        );
 
 
         // ================= START APP =================

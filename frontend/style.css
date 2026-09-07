@@ -159,6 +159,8 @@ h1{
 
 select,
 input[type=text],
+input[type=search],
+input[type=email],
 input[type=number],
 input[type=date],
 textarea{
@@ -898,70 +900,88 @@ footer.note{
 .rowbtns button:hover {
     opacity: 0.85;
 }
-/* Keep the ledger controls visible */
-#tab-ledger {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 310px);
-}
-
-/* Search, project filter, buttons stay fixed */
-#tab-ledger > .controls {
-    flex-shrink: 0;
-}
-
-/* Instruction text stays fixed too */
-#tab-ledger > p {
-    flex-shrink: 0;
-}
-
-/* Only the actual table scrolls */
-/* ================= LOCK LEDGER AREA ================= */
+/* ================= LEDGER SCROLL ================= */
 
 #tab-ledger {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 310px);
-}
-
-#tab-ledger > .controls {
-    flex-shrink: 0;
-}
-
-#tab-ledger > p {
-    flex-shrink: 0;
-}
-
-#tab-ledger .table-scroll {
-    flex: 1;
     min-height: 0;
+}
+
+#tab-ledger > .controls {
+    flex-shrink: 0;
+}
+
+#tab-ledger > p {
+    flex-shrink: 0;
+}
+
+/*
+   Taller ledger viewport.
+   This is the main value to change later if needed.
+*/
+#tab-ledger .table-scroll {
+    height: 70vh;
+    min-height: 480px;
+    max-height: 780px;
+
     overflow-y: auto;
     overflow-x: auto;
+
     position: relative;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
-/* Lock the table header */
+/* Sticky ledger header */
 #tab-ledger .table-scroll thead th {
     position: sticky;
     top: 0;
     z-index: 50;
+
     background: #460404;
     color: #ffffff;
 }
+
+/* Preserve usable horizontal scrolling for all columns */
+#tab-ledger .table-scroll table {
+    min-width: 1450px;
+}
+
+/* Easier-to-use scrollbars */
+#tab-ledger .table-scroll::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+#tab-ledger .table-scroll::-webkit-scrollbar-thumb {
+    background: rgba(70, 4, 4, 0.45);
+    border-radius: 8px;
+    border: 3px solid #ffffff;
+}
+
+#tab-ledger .table-scroll::-webkit-scrollbar-track {
+    background: #f4f4f4;
+}
+
 .ledger-bottom-actions {
     display: flex;
     justify-content: flex-end;
-    padding-top: 16px;
+    padding-top: 12px;
     padding-bottom: 10px;
+    flex-shrink: 0;
+}
+
+/* Shorter laptop screens */
+@media (max-height: 800px) {
+
+    #tab-ledger .table-scroll {
+        height: 60vh;
+        min-height: 360px;
+    }
 }
 
 
-#tab-ledger .table-scroll thead th {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: #3a0505c4;
-}
 /* ================= AUDIT TRAIL ================= */
 
 .audit-header {
@@ -1176,4 +1196,18 @@ footer.note{
         grid-template-columns:
             1fr;
     }
+}
+.audit-description {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.audit-description strong {
+    font-weight: 700;
+    color: var(--ink);
+}
+
+#auditBody td {
+    padding: 14px 16px;
+    vertical-align: middle;
 }

@@ -147,10 +147,16 @@
                 </label>
 
                 <input
-                    type="text"
+                    type="search"
                     id="f-search"
-                    placeholder="Item, grade, PO..."
-                    style="min-width:180px;"
+                    name="inventory_query"
+                    placeholder="Item, project, grade, PO..."
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    style="min-width:220px;"
                 >
 
             </div>
@@ -1080,27 +1086,11 @@
             <thead>
 
                 <tr>
-
-                    <th>
-                        User
+                    <th>User</th>
+                    <th colspan="2">
+                        Activity
                     </th>
-
-                    <th>
-                        Action
-                    </th>
-
-                    <th>
-                        Item
-                    </th>
-
-                    <th>
-                        Changes
-                    </th>
-
-                    <th>
-                        Date
-                    </th>
-
+                    <th>Date</th>
                 </tr>
 
             </thead>
@@ -1180,6 +1170,8 @@
                 <input
                     type="text"
                     id="newUsername"
+                    name="new-system-username"
+                    autocomplete="off"
                     placeholder="e.g. fatima"
                 >
 
@@ -1193,8 +1185,10 @@
                 </label>
 
                 <input
-                    type="text"
+                    type="email"
                     id="newUserEmail"
+                    name="new-system-email"
+                    autocomplete="off"
                     placeholder="fatima@company.com"
                 >
 
@@ -1210,6 +1204,8 @@
                 <input
                     type="password"
                     id="newUserPassword"
+                    name="new-system-password"
+                    autocomplete="new-password"
                     placeholder="Minimum 6 characters"
                 >
 
