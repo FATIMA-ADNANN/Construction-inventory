@@ -1,5 +1,5 @@
-const API_URL = "http://localhost:5000/api";
-
+const API_BASE = "/site-inventory-ledger";
+const API_URL = `${API_BASE}/api`;
 const token = localStorage.getItem("token");
 
 const user = JSON.parse(
@@ -105,7 +105,454 @@ function escapeHtml(value) {
         .replace(/'/g, "&#039;");
 }
 
+const FIELD_RULES = {
+    project: "title",
+    item: "title",
+    grade: "title",
+    po_reference: "upper",
+    unit: "unit"
+};
 
+
+const TITLE_ACRONYMS = new Set([
+    "PVC",
+    "UPVC",
+    "CPVC",
+    "HDPE",
+    "PPR",
+    "RCC",
+    "GI",
+    "MS",
+    "SS",
+    "OPC",
+    "SRC",
+    "MM"
+]);
+
+
+const UNIT_ALIASES = {
+    kg: "Kg",
+    kgs: "Kg",
+    kilogram: "Kg",
+    kilograms: "Kg",
+
+    g: "Gram",
+    gm: "Gram",
+    gram: "Gram",
+    grams: "Gram",
+
+    ton: "Ton",
+    tons: "Ton",
+    tonne: "Ton",
+    tonnes: "Ton",
+
+    nos: "Nos",
+    no: "Nos",
+    pcs: "Nos",
+    pc: "Nos",
+    piece: "Nos",
+    pieces: "Nos",
+
+    bag: "Bag",
+    bags: "Bag",
+
+    meter: "Meter",
+    meters: "Meter",
+    metre: "Meter",
+    metres: "Meter",
+    m: "Meter",
+
+    feet: "Feet",
+    foot: "Feet",
+    ft: "Feet",
+
+    inch: "Inch",
+    inches: "Inch",
+    in: "Inch",
+
+    sqft: "Sqft",
+    "sq ft": "Sqft",
+    "sq. ft": "Sqft",
+
+    sqm: "Sqm",
+    "sq m": "Sqm",
+    "sq. m": "Sqm",
+
+    liter: "Liter",
+    liters: "Liter",
+    litre: "Liter",
+    litres: "Liter",
+    l: "Liter",
+
+    box: "Box",
+    boxes: "Box",
+
+    roll: "Roll",
+    rolls: "Roll",
+
+    set: "Set",
+    sets: "Set"
+};
+
+
+function cleanText(value) {
+
+    return String(value || "")
+        .trim()
+        .replace(/\s+/g, " ");
+}
+
+
+function toSmartTitleCase(value) {
+
+    return cleanText(value)
+        .split(" ")
+        .map(
+            word => {
+
+                if (!word) {
+                    return "";
+                }
+
+                const upper =
+                    word.toUpperCase();
+
+                if (
+                    TITLE_ACRONYMS.has(
+                        upper
+                    )
+                ) {
+
+                    return upper;
+                }
+
+                if (
+                    /\d/.test(word) &&
+                    /[a-z]/i.test(word)
+                ) {
+
+                    return upper;
+                }
+
+                const lower =
+                    word.toLowerCase();
+
+                return (
+                    lower.charAt(0)
+                        .toUpperCase()
+                    +
+                    lower.slice(1)
+                );
+            }
+        )
+        .join(" ");
+}
+
+
+function normalizeField(
+    field,
+    value
+) {
+
+    const clean =
+        cleanText(value);
+
+    if (!clean) {
+        return "";
+    }
+
+    const rule =
+        FIELD_RULES[field] ||
+        "plain";
+
+
+    if (
+        rule === "upper"
+    ) {
+
+        return clean.toUpperCase();
+    }
+
+
+    if (
+        rule === "unit"
+    ) {
+
+        const key =
+            clean.toLowerCase();
+
+        return (
+            UNIT_ALIASES[key] ||
+            toSmartTitleCase(clean)
+        );
+    }
+
+
+    if (
+        rule === "title"
+    ) {
+
+        return toSmartTitleCase(
+            clean
+        );
+    }
+
+
+    return clean;
+}
+
+
+function getCleanExistingValue(
+    field,
+    value
+) {
+
+    const normalized =
+        normalizeField(
+            field,
+            value
+        );
+
+    if (!normalized) {
+        return "";
+    }
+
+
+    const values =
+        field === "project"
+            ? [
+                ...projects.map(
+                    project =>
+                        project.name
+                ),
+                ...records.map(
+                    record =>
+                        record.project
+                )
+            ]
+            : records.map(
+                record =>
+                    record[field]
+            );
+
+
+    const existing =
+        values.find(
+            currentValue =>
+                normalizeField(
+                    field,
+                    currentValue
+                ) === normalized
+        );
+
+
+    return existing
+        ? cleanText(existing)
+        : normalized;
+}
+
+
+function getInventoryFieldOptions(
+    field
+) {
+
+    const unique =
+        new Map();
+
+
+    const values =
+        field === "project"
+            ? [
+                ...projects.map(
+                    project =>
+                        project.name
+                ),
+                ...records.map(
+                    record =>
+                        record.project
+                )
+            ]
+            : records.map(
+                record =>
+                    record[field]
+            );
+
+
+    values.forEach(
+        value => {
+
+            const raw =
+                cleanText(
+                    value
+                );
+
+
+            if (!raw) {
+                return;
+            }
+
+
+            const normalized =
+                normalizeField(
+                    field,
+                    raw
+                );
+
+
+            const key =
+                normalized
+                    .toLowerCase();
+
+
+            if (
+                !unique.has(
+                    key
+                )
+            ) {
+
+                unique.set(
+                    key,
+                    raw
+                );
+            }
+        }
+    );
+
+
+    return [
+        ...unique.values()
+    ]
+        .sort(
+            (a, b) =>
+                a.localeCompare(
+                    b,
+                    undefined,
+                    {
+                        numeric: true,
+                        sensitivity: "base"
+                    }
+                )
+        );
+}
+
+
+function populateInventoryDropdowns() {
+
+    const makeUnique =
+        values => [
+            ...new Set(
+                values
+                    .map(
+                        value =>
+                            String(
+                                value || ""
+                            ).trim()
+                    )
+                    .filter(Boolean)
+            )
+        ]
+            .sort(
+                (a, b) =>
+                    a.localeCompare(
+                        b,
+                        undefined,
+                        {
+                            numeric: true,
+                            sensitivity: "base"
+                        }
+                    )
+            );
+
+
+    const items =
+        makeUnique(
+            records.map(
+                record =>
+                    record.item
+            )
+        );
+
+
+    const grades =
+        makeUnique(
+            records.map(
+                record =>
+                    record.grade
+            )
+        );
+
+
+    const poReferences =
+        makeUnique(
+            records.map(
+                record =>
+                    record.po_reference
+            )
+        );
+
+
+    const units =
+        makeUnique(
+            records.map(
+                record =>
+                    record.unit
+            )
+        );
+
+
+    const populate =
+        (
+            id,
+            values
+        ) => {
+
+            const list =
+                document.getElementById(
+                    id
+                );
+
+
+            if (!list) {
+                return;
+            }
+
+
+            list.innerHTML =
+                values
+                    .map(
+                        value =>
+                            `
+                                <option
+                                    value="${escapeHtml(
+                                        value
+                                    )}"
+                                ></option>
+                            `
+                    )
+                    .join("");
+        };
+
+
+    populate(
+        "itemOptions",
+        items
+    );
+
+    populate(
+        "gradeOptions",
+        grades
+    );
+
+    populate(
+        "poOptions",
+        poReferences
+    );
+
+    populate(
+        "unitOptions",
+        units
+    );
+}
 // ================= API RESPONSE =================
 
 async function handleApiResponse(response) {
@@ -548,8 +995,6 @@ async function createUser() {
         );
     }
 }
-
-
 async function changeUserRole(
     userId,
     role
@@ -1003,7 +1448,6 @@ function formatAuditAction(log) {
             );
     }
 }
-
 function renderAuditLogs() {
 
     if (
@@ -1107,6 +1551,108 @@ function renderAuditLogs() {
 // =================================================
 // ================= PROJECTS ======================
 // =================================================
+
+async function ensureProjectExists(
+    value
+) {
+
+    const name =
+        getCleanExistingValue(
+            "project",
+            value
+        );
+
+
+    if (!name) {
+        return "";
+    }
+
+
+    const existing =
+        projects.find(
+            project =>
+                normalizeField(
+                    "project",
+                    project.name
+                ) ===
+                normalizeField(
+                    "project",
+                    name
+                )
+        );
+
+
+    if (existing) {
+
+        return cleanText(
+            existing.name
+        );
+    }
+
+
+    const response =
+        await fetch(
+            `${API_URL}/projects`,
+            {
+
+                method:
+                    "POST",
+
+                headers:
+                    authHeaders(true),
+
+                body:
+                    JSON.stringify({
+                        name
+                    })
+            }
+        );
+
+
+    const data =
+        await response
+            .json()
+            .catch(() => ({}));
+
+
+    if (
+        !response.ok &&
+        response.status !== 409
+    ) {
+
+        throw new Error(
+            data.message ||
+            "Failed to add project."
+        );
+    }
+
+
+    await loadProjects();
+
+    await loadDashboardProjects();
+
+
+    const savedProject =
+        projects.find(
+            project =>
+                normalizeField(
+                    "project",
+                    project.name
+                ) ===
+                normalizeField(
+                    "project",
+                    name
+                )
+        );
+
+
+    return savedProject
+        ? cleanText(
+            savedProject.name
+        )
+        : name;
+}
+
 
 async function loadProjects() {
 
@@ -1294,7 +1840,10 @@ async function addProject() {
 
 
     const name =
-        input.value.trim();
+        normalizeField(
+            "project",
+            input.value
+        );
 
 
     if (!name) {
@@ -1486,10 +2035,15 @@ function filteredLedgerRecords() {
 
             return (
 
-                (
-                    !project ||
-                    record.project === project
-                )
+               (
+                !project ||
+                String(record.project || "")
+                    .trim()
+                    .toLowerCase() ===
+                String(project || "")
+                    .trim()
+                    .toLowerCase()
+            )
 
                 &&
 
@@ -1799,6 +2353,20 @@ function renderLedger() {
                             <div class="rowbtns">
 
                                 ${
+                                    canManageInventory()
+                                        ? `
+                                            <button
+                                                type="button"
+                                                class="edit-btn"
+                                                data-edit="${record.id}"
+                                            >
+                                                Edit
+                                            </button>
+                                        `
+                                        : ""
+                                }
+
+                                ${
                                     canCheckout
                                         ? `
                                             <button
@@ -1811,7 +2379,6 @@ function renderLedger() {
                                         `
                                         : ""
                                 }
-
 
                                 ${
                                     canDeleteInventory()
@@ -1875,6 +2442,7 @@ function openInventoryForm(
 
 
     populateInventoryProjectDropdown();
+    populateInventoryDropdowns();
 
 
     const record =
@@ -2016,44 +2584,54 @@ async function saveInventory() {
     const payload = {
 
         project:
-            document
-                .getElementById(
-                    "in-project"
-                )
-                .value
-                .trim(),
+            getCleanExistingValue(
+                "project",
+                document
+                    .getElementById(
+                        "in-project"
+                    )
+                    .value
+            ),
 
         item:
-            document
-                .getElementById(
-                    "in-item"
-                )
-                .value
-                .trim(),
+            getCleanExistingValue(
+                "item",
+                document
+                    .getElementById(
+                        "in-item"
+                    )
+                    .value
+            ),
 
         grade:
-            document
-                .getElementById(
-                    "in-grade"
-                )
-                .value
-                .trim(),
+            getCleanExistingValue(
+                "grade",
+                document
+                    .getElementById(
+                        "in-grade"
+                    )
+                    .value
+            ),
 
         po_reference:
-            document
-                .getElementById(
-                    "in-po"
-                )
-                .value
-                .trim(),
+            getCleanExistingValue(
+                "po_reference",
+                document
+                    .getElementById(
+                        "in-po"
+                    )
+                    .value
+            ),
 
         unit:
-            document
-                .getElementById(
-                    "in-unit"
-                )
-                .value
-                .trim(),
+            getCleanExistingValue(
+                "unit",
+                document
+                    .getElementById(
+                        "in-unit"
+                    )
+                    .value
+            ),
 
         rate:
             Number(
@@ -3245,22 +3823,26 @@ function parseInventoryCSV(
                 i + 1,
 
             project:
-                row["project"]
-                    ?.trim() ||
-                "",
+                normalizeField(
+                    "project",
+                    row["project"]
+                ),
 
             item:
-                row["item"]
-                    ?.trim() ||
-                "",
+                normalizeField(
+                    "item",
+                    row["item"]
+                ),
 
             grade:
-                row["grade"]
-                    ?.trim() ||
-                "",
+                normalizeField(
+                    "grade",
+                    row["grade"]
+                ),
 
             po_reference:
-                (
+                normalizeField(
+                    "po_reference",
                     row[
                         "po reference"
                     ]
@@ -3270,12 +3852,13 @@ function parseInventoryCSV(
                     ]
                     ??
                     ""
-                ).trim(),
+                ),
 
             unit:
-                row["unit"]
-                    ?.trim() ||
-                "",
+                normalizeField(
+                    "unit",
+                    row["unit"]
+                ),
 
             rate:
                 Number(
@@ -3398,23 +3981,26 @@ async function parseExcelFile(
                     index + 2,
 
                 project:
-                    String(
+                    normalizeField(
+                        "project",
                         normalized[
                             "project"
                         ] ||
                         ""
-                    ).trim(),
+                    ),
 
                 item:
-                    String(
+                    normalizeField(
+                        "item",
                         normalized[
                             "item"
                         ] ||
                         ""
-                    ).trim(),
+                    ),
 
                 grade:
-                    String(
+                    normalizeField(
+                        "grade",
                         normalized[
                             "grade"
                         ] ||
@@ -3422,10 +4008,11 @@ async function parseExcelFile(
                             "grade / size"
                         ] ||
                         ""
-                    ).trim(),
+                    ),
 
                 po_reference:
-                    String(
+                    normalizeField(
+                        "po_reference",
                         normalized[
                             "po reference"
                         ]
@@ -3435,15 +4022,16 @@ async function parseExcelFile(
                         ]
                         ??
                         ""
-                    ).trim(),
+                    ),
 
                 unit:
-                    String(
+                    normalizeField(
+                        "unit",
                         normalized[
                             "unit"
                         ] ||
                         ""
-                    ).trim(),
+                    ),
 
                 rate:
                     Number(
@@ -3956,7 +4544,7 @@ async function viewAttachments(
                     file => {
 
                         const url =
-                            `http://localhost:5000${file.file_path}`;
+                            `${API_BASE}${file.file_path}`;
 
 
                         const fileName =
@@ -4158,6 +4746,8 @@ function switchTab(
 // =================================================
 
 function renderAll() {
+
+    populateInventoryDropdowns();
 
     renderLedger();
 
@@ -4824,6 +5414,16 @@ document.addEventListener(
                                 .checkout
                         );
                     }
+                    if (
+                        target.dataset.edit
+                    ) {
+
+                        openInventoryForm(
+                            target.dataset.edit
+                        );
+
+                        return;
+                    }
                 }
             );
 
@@ -4904,11 +5504,18 @@ document.addEventListener(
                         "";
 
 
-                    // PROJECT
+                    // SEARCHABLE / SELECTABLE TEXT FIELDS
+                    // Project, Item, Grade/Size, PO Ref and Unit
+                    // use a real select for reliable inline editing.
+                    // "+ Add new..." switches to a text input.
 
                     if (
-                        field ===
-                        "project"
+                        Object.prototype
+                            .hasOwnProperty
+                            .call(
+                                FIELD_RULES,
+                                field
+                            )
                     ) {
 
                         const select =
@@ -4921,16 +5528,60 @@ document.addEventListener(
                             "cell-select";
 
 
-                        select.innerHTML =
-                            `
-                                <option value="">
-                                    Select Project
-                                </option>
-                            `;
+                        const values =
+                            getInventoryFieldOptions(
+                                field
+                            );
 
 
-                        projects.forEach(
-                            project => {
+                        const currentValue =
+                            cleanText(
+                                oldValue
+                            );
+
+
+                        if (
+                            currentValue &&
+                            !values.some(
+                                value =>
+                                    normalizeField(
+                                        field,
+                                        value
+                                    ) ===
+                                    normalizeField(
+                                        field,
+                                        currentValue
+                                    )
+                            )
+                        ) {
+
+                            values.unshift(
+                                currentValue
+                            );
+                        }
+
+
+                        if (!currentValue) {
+
+                            const emptyOption =
+                                document.createElement(
+                                    "option"
+                                );
+
+                            emptyOption.value =
+                                "";
+
+                            emptyOption.textContent =
+                                "Select value";
+
+                            select.appendChild(
+                                emptyOption
+                            );
+                        }
+
+
+                        values.forEach(
+                            value => {
 
                                 const option =
                                     document.createElement(
@@ -4939,16 +5590,21 @@ document.addEventListener(
 
 
                                 option.value =
-                                    project.name;
-
+                                    value;
 
                                 option.textContent =
-                                    project.name;
+                                    value;
 
 
                                 if (
-                                    project.name ===
-                                    oldValue
+                                    normalizeField(
+                                        field,
+                                        value
+                                    ) ===
+                                    normalizeField(
+                                        field,
+                                        currentValue
+                                    )
                                 ) {
 
                                     option.selected =
@@ -4963,43 +5619,97 @@ document.addEventListener(
                         );
 
 
+                        const newOption =
+                            document.createElement(
+                                "option"
+                            );
+
+                        newOption.value =
+                            "__new__";
+
+                        newOption.textContent =
+                            field === "project"
+                                ? "+ Add new project..."
+                                : "+ Add new...";
+
+                        select.appendChild(
+                            newOption
+                        );
+
+
                         cell.innerHTML =
                             "";
-
 
                         cell.appendChild(
                             select
                         );
 
-
                         select.focus();
 
 
-                        let saved =
+                        let finished =
+                            false;
+
+                        let enteringNew =
                             false;
 
 
-                        async function saveProject() {
+                        async function saveInlineValue(
+                            rawValue
+                        ) {
 
-                            if (
-                                saved
-                            ) {
-
+                            if (finished) {
                                 return;
                             }
 
 
-                            saved =
+                            finished =
                                 true;
 
 
-                            const newValue =
-                                select.value.trim();
+                            let newValue =
+                                getCleanExistingValue(
+                                    field,
+                                    rawValue
+                                );
+
+
+                            if (
+                                field ===
+                                "project"
+                            ) {
+
+                                try {
+
+                                    newValue =
+                                        await ensureProjectExists(
+                                            newValue
+                                        );
+
+                                } catch (error) {
+
+                                    console.error(
+                                        "INLINE PROJECT ERROR:",
+                                        error
+                                    );
+
+                                    alert(
+                                        error.message ||
+                                        "Unable to add project."
+                                    );
+
+                                    renderLedger();
+
+                                    return;
+                                }
+                            }
 
 
                             if (
                                 newValue ===
-                                String(oldValue)
+                                cleanText(
+                                    oldValue
+                                )
                             ) {
 
                                 renderLedger();
@@ -5016,15 +5726,190 @@ document.addEventListener(
                         }
 
 
+                        function openNewValueInput() {
+
+                            if (
+                                finished ||
+                                enteringNew
+                            ) {
+                                return;
+                            }
+
+
+                            enteringNew =
+                                true;
+
+
+                            const input =
+                                document.createElement(
+                                    "input"
+                                );
+
+
+                            input.type =
+                                "text";
+
+                            input.className =
+                                "cell-input";
+
+                            input.placeholder =
+                                field === "project"
+                                    ? "Type new project name"
+                                    : "Type new value";
+
+
+                            cell.innerHTML =
+                                "";
+
+                            cell.appendChild(
+                                input
+                            );
+
+
+                            input.focus();
+
+
+                            let inputFinished =
+                                false;
+
+
+                            async function saveNewValue() {
+
+                                if (inputFinished) {
+                                    return;
+                                }
+
+
+                                inputFinished =
+                                    true;
+
+
+                                const rawValue =
+                                    input.value;
+
+
+                                if (
+                                    !cleanText(
+                                        rawValue
+                                    )
+                                ) {
+
+                                    renderLedger();
+
+                                    return;
+                                }
+
+
+                                await saveInlineValue(
+                                    rawValue
+                                );
+                            }
+
+
+                            input.addEventListener(
+                                "blur",
+                                saveNewValue,
+                                {
+                                    once: true
+                                }
+                            );
+
+
+                            input.addEventListener(
+                                "keydown",
+                                event => {
+
+                                    if (
+                                        event.key ===
+                                        "Enter"
+                                    ) {
+
+                                        input.blur();
+                                    }
+
+
+                                    if (
+                                        event.key ===
+                                        "Escape"
+                                    ) {
+
+                                        inputFinished =
+                                            true;
+
+                                        finished =
+                                            true;
+
+                                        renderLedger();
+                                    }
+                                }
+                            );
+                        }
+
+
                         select.addEventListener(
                             "change",
-                            saveProject
+                            async () => {
+
+                                if (
+                                    select.value ===
+                                    "__new__"
+                                ) {
+
+                                    openNewValueInput();
+
+                                    return;
+                                }
+
+
+                                await saveInlineValue(
+                                    select.value
+                                );
+                            }
+                        );
+
+
+                        select.addEventListener(
+                            "keydown",
+                            event => {
+
+                                if (
+                                    event.key ===
+                                    "Escape"
+                                ) {
+
+                                    finished =
+                                        true;
+
+                                    renderLedger();
+                                }
+                            }
                         );
 
 
                         select.addEventListener(
                             "blur",
-                            saveProject
+                            () => {
+
+                                setTimeout(
+                                    () => {
+
+                                        if (
+                                            !finished &&
+                                            !enteringNew &&
+                                            cell.contains(
+                                                select
+                                            )
+                                        ) {
+
+                                            finished =
+                                                true;
+
+                                            renderLedger();
+                                        }
+                                    },
+                                    0
+                                );
+                            }
                         );
 
 
@@ -5205,8 +6090,25 @@ document.addEventListener(
                             true;
 
 
-                        const newValue =
+                        let newValue =
                             input.value.trim();
+
+
+                        if (
+                            Object.prototype
+                                .hasOwnProperty
+                                .call(
+                                    FIELD_RULES,
+                                    field
+                                )
+                        ) {
+
+                            newValue =
+                                getCleanExistingValue(
+                                    field,
+                                    newValue
+                                );
+                        }
 
 
                         if (

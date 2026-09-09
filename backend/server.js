@@ -19,6 +19,32 @@ const authorizeRoles =
 
 const app = express();
 
+const BASE_PATH = "/site-inventory-ledger";
+
+/*
+ * cPanel may forward the full application path to Express.
+ * This middleware removes /site-inventory-ledger internally so
+ * all existing routes such as /api/login, /api/inventory and
+ * /uploads keep working without rewriting the whole backend.
+ */
+app.use((req, res, next) => {
+
+    if (
+        req.url === BASE_PATH ||
+        req.url.startsWith(
+            BASE_PATH + "/"
+        )
+    ) {
+
+        req.url =
+            req.url.slice(
+                BASE_PATH.length
+            ) || "/";
+    }
+
+    next();
+});
+
 const PORT =
     process.env.PORT || 5000;
 
@@ -225,19 +251,32 @@ async function createAuditLog({
 
 
 // =================================================
-// ================= HOME ==========================
+// ================= FRONTEND ======================
 // =================================================
+
+app.use(
+    express.static(
+        path.join(
+            __dirname,
+            "../frontend"
+        )
+    )
+);
 
 app.get(
     "/",
     (req, res) => {
 
-        res.send(
-            "Construction Inventory Backend is running"
+        res.sendFile(
+            path.join(
+                __dirname,
+                "../frontend/index.html"
+            )
         );
     }
 );
 
+module.exports = app;
 
 // =================================================
 // ================= DATABASE TEST =================
@@ -3282,12 +3321,18 @@ app.use(
 // ================= START SERVER ==================
 // =================================================
 
-app.listen(
-    PORT,
-    () => {
 
-        console.log(
-            `Server running on http://localhost:${PORT}`
-        );
-    }
+// Serve frontend files
+app.use(
+    express.static(
+        path.join(__dirname, "../frontend")
+    )
 );
+
+app.get("/", (req, res) => {
+    res.sendFile(
+        path.join(__dirname, "../frontend/index.html")
+    );
+});
+
+module.exports = app;

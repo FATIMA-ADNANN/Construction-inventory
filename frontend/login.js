@@ -1,5 +1,4 @@
-const API_URL =
-    "http://localhost:5000/api";
+const API_URL = "/site-inventory-ledger/api";
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -26,7 +25,6 @@ document.addEventListener(
 
         loginForm.addEventListener(
             "submit",
-
             async function (event) {
 
                 event.preventDefault();
@@ -129,7 +127,7 @@ document.addEventListener(
                             () => {
 
                                 window.location.href =
-                                    "index.html";
+                                    "/site-inventory-ledger/index.html";
 
                             },
                             500

@@ -24,10 +24,7 @@
         rel="stylesheet"
     >
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+    <link rel="stylesheet" href="/site-inventory-ledger/style.css">
 
 </head>
 
@@ -760,14 +757,16 @@
 
             <div class="field">
 
-                <label for="in-item">
-                    Item
-                </label>
-
                 <input
-                    type="text"
                     id="in-item"
+                    type="text"
+                    list="itemOptions"
+                    autocomplete="off"
                 >
+
+                <datalist id="itemOptions">
+                    
+                </datalist>
 
             </div>
 
@@ -782,9 +781,14 @@
                 </label>
 
                 <input
-                    type="text"
                     id="in-grade"
+                    type="text"
+                    list="gradeOptions"
+                    autocomplete="off"
+                    placeholder="Select or type grade / size"
                 >
+
+                <datalist id="gradeOptions"></datalist>
 
             </div>
 
@@ -799,29 +803,32 @@
                 </label>
 
                 <input
-                    type="text"
                     id="in-po"
+                    type="text"
+                    list="poOptions"
+                    autocomplete="off"
+                    placeholder="Select or type PO reference"
                 >
+
+                <datalist id="poOptions"></datalist>
 
             </div>
 
 
 
             <!-- UNIT -->
+            <div>
+            <input
+            id="in-unit"
+            type="text"
+            list="unitOptions"
+            autocomplete="off"
+        >
 
-            <div class="field">
-
-                <label for="in-unit">
-                    Unit
-                </label>
-
-                <input
-                    type="text"
-                    id="in-unit"
-                >
-
+        <datalist id="unitOptions">
+            
+        </datalist>
             </div>
-
 
 
             <!-- RATE -->
