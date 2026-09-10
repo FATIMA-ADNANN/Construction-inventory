@@ -1227,6 +1227,62 @@ async function resetUserPassword(
     }
 }
 
+async function importInventoryInBatches(rows) {
+
+    const BATCH_SIZE = 1000;
+
+    for (
+        let i = 0;
+        i < rows.length;
+        i += BATCH_SIZE
+    ) {
+
+        const batch =
+            rows.slice(
+                i,
+                i + BATCH_SIZE
+            );
+
+        const response =
+            await fetch(
+                "/site-inventory-ledger/api/inventory/import",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${localStorage.getItem("token")}`
+                    },
+                    body: JSON.stringify({
+                        rows: batch
+                    })
+                }
+            );
+
+        const result =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                result.message ||
+                "Import failed"
+            );
+        }
+
+        console.log(
+            `Imported ${Math.min(
+                i + BATCH_SIZE,
+                rows.length
+            )} of ${rows.length}`
+        );
+    }
+
+    alert(
+        `${rows.length} rows imported successfully`
+    );
+}
 
 // =================================================
 // ================= AUDIT =========================

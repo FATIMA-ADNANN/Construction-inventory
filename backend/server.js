@@ -55,7 +55,8 @@ const PORT =
 
 app.use(cors());
 
-app.use(express.json());
+app.use(express.json({ limit: "1gb" }));
+app.use(express.urlencoded({ limit: "1gb", extended: true }));
 
 
 // =================================================
@@ -134,7 +135,7 @@ const upload =
         limits: {
 
             fileSize:
-                10 *
+                100 *
                 1024 *
                 1024
         },
@@ -2633,20 +2634,6 @@ app.post(
         }
 
 
-        if (
-            rows.length > 5000
-        ) {
-
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Maximum 5000 rows can be imported at once."
-                });
-        }
-
-
         const connection =
             await pool
                 .getConnection();
@@ -3276,7 +3263,7 @@ app.use(
                     .json({
 
                         message:
-                            "Attachment must be smaller than 10 MB."
+                            "Attachment must be smaller than 100 MB."
                     });
             }
 
