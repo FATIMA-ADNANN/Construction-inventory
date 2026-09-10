@@ -25,6 +25,9 @@ let activeTab = "ledger";
 let dashProject = "";
 let attachmentInventoryId = null;
 
+let ledgerPage = 1;
+const LEDGER_PAGE_SIZE = 100;
+
 const currentRole =
     user?.role || "viewer";
 
@@ -2057,13 +2060,174 @@ function filteredLedgerRecords() {
 }
 
 
+function renderLedgerPager(
+    totalRows
+) {
+
+    const pager =
+        document.getElementById(
+            "ledgerPager"
+        );
+
+
+    if (!pager) {
+        return;
+    }
+
+
+    const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                totalRows /
+                LEDGER_PAGE_SIZE
+            )
+        );
+
+
+    if (
+        ledgerPage >
+        totalPages
+    ) {
+
+        ledgerPage =
+            totalPages;
+    }
+
+
+    pager.innerHTML = `
+
+        <button
+            type="button"
+            id="ledgerPrevPage"
+            class="btn small secondary"
+            ${ledgerPage <= 1 ? "disabled" : ""}
+        >
+            Prev
+        </button>
+
+        <span class="ledger-page-info">
+            Page ${ledgerPage} of ${totalPages}
+            &nbsp;|&nbsp;
+            ${num(totalRows)} records
+        </span>
+
+        <button
+            type="button"
+            id="ledgerNextPage"
+            class="btn small secondary"
+            ${ledgerPage >= totalPages ? "disabled" : ""}
+        >
+            Next
+        </button>
+
+    `;
+
+
+    document
+        .getElementById(
+            "ledgerPrevPage"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                if (
+                    ledgerPage >
+                    1
+                ) {
+
+                    ledgerPage--;
+
+                    renderLedger();
+
+                    document
+                        .querySelector(
+                            "#tab-ledger .table-scroll"
+                        )
+                        ?.scrollTo({
+                            top: 0,
+                            behavior: "smooth"
+                        });
+                }
+            }
+        );
+
+
+    document
+        .getElementById(
+            "ledgerNextPage"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                if (
+                    ledgerPage <
+                    totalPages
+                ) {
+
+                    ledgerPage++;
+
+                    renderLedger();
+
+                    document
+                        .querySelector(
+                            "#tab-ledger .table-scroll"
+                        )
+                        ?.scrollTo({
+                            top: 0,
+                            behavior: "smooth"
+                        });
+                }
+            }
+        );
+}
+
+
 function renderLedger() {
 
     renderProjectFilterOptions();
 
 
-    const rows =
+    const filteredRows =
         filteredLedgerRecords();
+
+
+    const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                filteredRows.length /
+                LEDGER_PAGE_SIZE
+            )
+        );
+
+
+    if (
+        ledgerPage >
+        totalPages
+    ) {
+
+        ledgerPage =
+            totalPages;
+    }
+
+
+    const startIndex =
+        (
+            ledgerPage -
+            1
+        ) *
+        LEDGER_PAGE_SIZE;
+
+
+    const rows =
+        filteredRows.slice(
+            startIndex,
+            startIndex +
+            LEDGER_PAGE_SIZE
+        );
 
 
     const body =
@@ -2086,7 +2250,7 @@ function renderLedger() {
     if (emptyState) {
 
         emptyState.style.display =
-            rows.length
+            filteredRows.length
                 ? "none"
                 : "block";
     }
@@ -2404,6 +2568,11 @@ function renderLedger() {
             }
         )
         .join("");
+
+
+    renderLedgerPager(
+        filteredRows.length
+    );
 }
 
 
@@ -4738,6 +4907,9 @@ function switchTab(
                 ? "block"
                 : "none";
     }
+
+
+    renderAll();
 }
 
 
@@ -4747,17 +4919,57 @@ function switchTab(
 
 function renderAll() {
 
-    populateInventoryDropdowns();
+    if (
+        activeTab ===
+        "ledger"
+    ) {
 
-    renderLedger();
+        renderLedger();
 
-    renderDashboard();
+        return;
+    }
 
-    renderCheckouts();
 
-    renderAuditLogs();
+    if (
+        activeTab ===
+        "dashboard"
+    ) {
 
-    renderUsers();
+        renderDashboard();
+
+        return;
+    }
+
+
+    if (
+        activeTab ===
+        "checkouts"
+    ) {
+
+        renderCheckouts();
+
+        return;
+    }
+
+
+    if (
+        activeTab ===
+        "audit"
+    ) {
+
+        renderAuditLogs();
+
+        return;
+    }
+
+
+    if (
+        activeTab ===
+        "users"
+    ) {
+
+        renderUsers();
+    }
 }
 
 
@@ -4769,28 +4981,19 @@ async function init() {
 
     try {
 
-        await loadProjects();
+        /*
+         * Only load the data required for the first visible screen.
+         * The ledger uses the inventory records, so there is no
+         * separate loadLedger() call.
+         */
 
-        await loadRecords();
-
-        await loadCheckouts();
+        await Promise.all([
+            loadProjects(),
+            loadRecords()
+        ]);
 
 
         await loadDashboardProjects();
-
-
-        if (
-            getRole() ===
-            "admin"
-        ) {
-
-            await loadAuditLogs();
-
-            await loadUsers();
-        }
-
-
-        renderAll();
 
 
         switchTab(
@@ -4798,9 +5001,83 @@ async function init() {
         );
 
 
+        renderLedger();
+
+
         console.log(
-            "Application loaded successfully."
+            "Ledger loaded successfully."
         );
+
+
+        /*
+         * Load secondary tabs after the ledger is already visible.
+         * These requests no longer delay the first ledger render.
+         */
+
+        loadCheckouts()
+            .then(
+                () => {
+
+                    if (
+                        activeTab ===
+                        "checkouts"
+                    ) {
+
+                        renderCheckouts();
+                    }
+                }
+            )
+            .catch(
+                error => {
+
+                    console.error(
+                        "Checkout preload error:",
+                        error
+                    );
+                }
+            );
+
+
+        if (
+            getRole() ===
+            "admin"
+        ) {
+
+            Promise.all([
+                loadAuditLogs(),
+                loadUsers()
+            ])
+                .then(
+                    () => {
+
+                        if (
+                            activeTab ===
+                            "audit"
+                        ) {
+
+                            renderAuditLogs();
+                        }
+
+
+                        if (
+                            activeTab ===
+                            "users"
+                        ) {
+
+                            renderUsers();
+                        }
+                    }
+                )
+                .catch(
+                    error => {
+
+                        console.error(
+                            "Admin preload error:",
+                            error
+                        );
+                    }
+                );
+        }
 
 
     } catch (error) {
@@ -4909,6 +5186,9 @@ document.addEventListener(
                     inventorySearch.dataset.userTyped =
                         "1";
 
+                    ledgerPage =
+                        1;
+
                     renderLedger();
                 }
             );
@@ -4942,7 +5222,13 @@ document.addEventListener(
             )
             ?.addEventListener(
                 "change",
-                renderLedger
+                () => {
+
+                    ledgerPage =
+                        1;
+
+                    renderLedger();
+                }
             );
 
 

@@ -1804,3 +1804,46 @@ footer.note{
     grid-template-columns:1fr;
   }
 }
+
+
+/* ================= LEDGER PAGINATION ================= */
+
+.ledger-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: 100%;
+    padding: 14px 12px;
+    margin-top: 10px;
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+}
+
+.ledger-page-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+.ledger-pagination button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+@media(max-width:600px) {
+    .ledger-pagination {
+        gap: 10px;
+        padding: 12px 8px;
+    }
+
+    .ledger-page-info {
+        font-size: 12px;
+    }
+}
